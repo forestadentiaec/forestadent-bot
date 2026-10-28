@@ -90,8 +90,8 @@ async function analizarPedidoConIA(texto_del_cliente) {
 async function generarCotizacionConIA(texto_del_cliente, catalogo) {
     const modelos = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
     
-    // Le pasamos el catálogo en texto a Gemini
-    let catalogoTexto = catalogo.map(p => `- ${p.nombre} | Precio por Unidad: $${p.precio.toFixed(2)} | Viene en: ${p.empaque}`).join('\n');
+    // Convertimos el catálogo limpio a texto seguro
+    let catalogoTexto = catalogo.map(p => `- ${p.nombre} | Precio por Unidad: $${(p.precio || 0).toFixed(2)} | Viene en: ${p.empaque}`).join('\n');
     
     const prompt = `
     Eres el experto comercial de Forestadent Ecuador. El cliente solicita cotizar: "${texto_del_cliente}"
@@ -161,11 +161,9 @@ app.get('/admin', async (req, res) => {
                     contenidoVisual += '</ul>';
                 } catch (e) { contenidoVisual = `<span class="text-gray-600 italic">${sol.contenido_texto}</span>`; }
             } else {
-                // Si es cotización o contacto, mostramos el texto plano formateado con saltos de línea
                 contenidoVisual = `<div class="text-sm text-gray-700 whitespace-pre-wrap">${sol.contenido_texto}</div>`;
             }
 
-            // Lógica visual de los estados
             let badgeColor = 'bg-gray-200 text-gray-800';
             if(sol.estado_atencion === 'pendiente') badgeColor = 'bg-yellow-200 text-yellow-800';
             if(sol.estado_atencion === 'despachado') badgeColor = 'bg-green-200 text-green-800';
@@ -321,6 +319,10 @@ app.get('/webhook', (req, res) => {
 
 app.post('/webhook', async (req, res) => {
     const body = req.body;
+    
+    // 🚨 LA SOLUCIÓN: Responder a Meta Inmediatamente (Evita que duplique el mensaje)
+    res.sendStatus(200); 
+
     if (body.object && body.entry && body.entry[0].changes && body.entry[0].changes[0].value.messages) {
         let valor = body.entry[0].changes[0].value;
         let from = valor.messages[0].from; 
@@ -353,14 +355,11 @@ app.post('/webhook', async (req, res) => {
                         }
                         usuario.estado_conversacion = 'menu_principal'; await usuario.save();
                     } 
-                    // NUEVO BLOQUE: PROCESAR COTIZACIÓN MATEMÁTICA CON IA
                     else if (usuario.estado_conversacion === 'esperando_cotizacion') {
-                        // 1. Extraemos todo tu inventario en vivo
-                        const catalogoCompleto = await Producto.find();
-                        // 2. Enviamos el texto y el inventario a la IA para el cálculo matemático
+                        // 🚨 LA SOLUCIÓN CATÁLOGO: Usamos .lean() para que Gemini lea los números perfectos
+                        const catalogoCompleto = await Producto.find().lean();
                         const textoCotizacionIA = await generarCotizacionConIA(msg_body, catalogoCompleto);
                         
-                        // 3. Guardamos la cotización en la Torre de Control con la etiqueta "cotizado"
                         const nuevaSolicitud = new Solicitud({ telefono_cliente: from, nombre_cliente: nombre_cliente, tipo_solicitud: 'cotizacion', contenido_texto: textoCotizacionIA, estado_atencion: 'cotizado' });
                         await nuevaSolicitud.save();
                         
@@ -394,8 +393,7 @@ app.post('/webhook', async (req, res) => {
                 });
             } catch (error) { console.error('🔴 Error:', error); }
         }
-        res.sendStatus(200); 
-    } else { res.sendStatus(200); }
+    }
 });
 
 app.listen(PORT, () => { console.log(`🚀 Motor encendido y escuchando en el puerto ${PORT}`); });
