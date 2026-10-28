@@ -198,6 +198,9 @@ app.get('/webhook', (req, res) => {
 
 app.post('/webhook', async (req, res) => {
     const body = req.body;
+
+    console.log("📬 ALERTA: Llegó un mensaje de Meta:", JSON.stringify(body, null, 2));
+    
     if (body.object && body.entry && body.entry[0].changes && body.entry[0].changes[0].value.messages) {
         let valor = body.entry[0].changes[0].value;
         let from = valor.messages[0].from; 
