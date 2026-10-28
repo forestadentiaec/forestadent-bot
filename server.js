@@ -4,6 +4,10 @@ const mongoose = require('mongoose');
 
 const app = express();
 app.use(express.json());
+
+// 🚨 Carpeta pública para internet (Aquí debe estar tu imagen 'logo-vector-forestadent.webp')
+app.use(express.static('public'));
+
 const PORT = process.env.PORT || 3000;
 
 // --- 1. CONEXIÓN A MONGODB ---
@@ -62,6 +66,7 @@ const productosIniciales = [
     { codigo: "729-1702", nombre: "Tubo FACE inf. 6 izquierda", categoria: "Tubos", precio: 5.00, empaque: "Funda de 10 unidades" },
     { codigo: "729-1702-D", nombre: "Tubo FACE inf. 6 derecha", categoria: "Tubos", precio: 5.00, empaque: "Funda de 10 unidades" }
 ];
+
 async function inicializarCatalogo() {
     try {
         const conteo = await Producto.countDocuments();
@@ -118,31 +123,54 @@ async function generarCotizacionConIA(texto_del_cliente, catalogo) {
     return "Lo siento, tuve un problema procesando el catálogo para tu cotización.";
 }
 
-// --- 4. PORTAL WEB DE ADMINISTRACIÓN ---
+// --- 4. PORTAL WEB DE ADMINISTRACIÓN (IDENTIDAD VISUAL FORESTADENT) ---
+
+// Inyectamos Google Fonts (Montserrat) y la paleta de colores del logo
+const htmlHead = `
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { 
+            theme: { 
+                extend: { 
+                    colors: { 
+                        forestaBlack: '#111111', 
+                        forestaGold: '#B4975A',
+                        forestaGoldHover: '#9a814b' 
+                    },
+                    fontFamily: {
+                        sans: ['Montserrat', 'sans-serif'],
+                    }
+                } 
+            } 
+        }
+    </script>
+`;
+
 const menuNavegacion = `
-    <div class="flex gap-4 mb-6">
-        <a href="/admin" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded shadow font-bold transition">📦 Pedidos y Cotizaciones</a>
-        <a href="/admin/clientes" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded shadow font-bold transition">👥 Directorio CRM</a>
-        <a href="/admin/catalogo" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded shadow font-bold transition">📖 Catálogo de Productos</a>
+    <div class="flex justify-between items-center mb-6 bg-white p-6 rounded-xl shadow-sm border-t-4 border-forestaGold">
+        <div class="flex items-center gap-6">
+            <img src="/logo-vector-forestadent.webp" alt="Forestadent Logo" class="h-16 object-contain" onerror="this.style.display='none'">
+            <div>
+                <h1 class="text-3xl font-extrabold text-forestaBlack uppercase tracking-wider">Torre de Control</h1>
+                <p class="text-sm text-forestaGold font-bold tracking-widest uppercase">Ecuador B2B</p>
+            </div>
+        </div>
+        <span class="bg-forestaGold text-white px-5 py-2 rounded shadow font-bold text-sm uppercase tracking-wide">🟢 Sistema Activo</span>
+    </div>
+    
+    <div class="flex gap-4 mb-8">
+        <a href="/admin" class="bg-forestaBlack hover:bg-gray-800 text-white px-6 py-3 rounded shadow font-bold transition uppercase text-sm tracking-wide">📦 Pedidos</a>
+        <a href="/admin/clientes" class="bg-forestaGold hover:bg-forestaGoldHover text-white px-6 py-3 rounded shadow font-bold transition uppercase text-sm tracking-wide">👥 Directorio CRM</a>
+        <a href="/admin/catalogo" class="bg-white border-2 border-forestaBlack text-forestaBlack hover:bg-gray-50 px-6 py-3 rounded shadow font-bold transition uppercase text-sm tracking-wide">📖 Catálogo</a>
     </div>
 `;
 
 app.get('/admin', async (req, res) => {
     try {
         const solicitudes = await Solicitud.find().sort({ fecha: -1 });
-        let html = `
-        <!DOCTYPE html>
-        <html lang="es">
-        <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Forestadent | Torre de Control</title><script src="https://cdn.tailwindcss.com"></script></head>
-        <body class="bg-gray-100 p-8 font-sans">
-            <div class="max-w-6xl mx-auto">
-                <div class="flex justify-between items-center mb-4"><h1 class="text-3xl font-bold text-gray-800">Torre de Control B2B</h1><span class="bg-green-600 text-white px-4 py-2 rounded-lg shadow font-bold">🟢 En línea</span></div>
-                ${menuNavegacion}
-                <div class="bg-white rounded-xl shadow-md overflow-hidden">
-                    <table class="w-full text-left border-collapse">
-                        <thead><tr class="bg-gray-800 text-white"><th class="p-4">Fecha</th><th class="p-4">Cliente</th><th class="p-4">Teléfono</th><th class="p-4">Detalle / Respuesta de IA</th><th class="p-4 text-center">Estado</th><th class="p-4 text-center">Acción</th></tr></thead>
-                        <tbody class="divide-y divide-gray-200">
-        `;
+        let html = `<!DOCTYPE html><html lang="es"><head><title>Forestadent | Pedidos</title>${htmlHead}</head><body class="bg-gray-50 p-8 font-sans"><div class="max-w-7xl mx-auto">${menuNavegacion}<div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100"><table class="w-full text-left border-collapse"><thead><tr class="bg-forestaBlack text-white uppercase text-sm tracking-wider"><th class="p-5">Fecha</th><th class="p-5">Cliente</th><th class="p-5">Teléfono</th><th class="p-5">Detalle / Respuesta IA</th><th class="p-5 text-center">Estado</th><th class="p-5 text-center">Acción</th></tr></thead><tbody class="divide-y divide-gray-100">`;
 
         solicitudes.forEach(sol => {
             let fecha = new Date(sol.fecha).toLocaleString('es-EC');
@@ -150,36 +178,26 @@ app.get('/admin', async (req, res) => {
             if(sol.tipo_solicitud === 'pedido') {
                 try {
                     let productos = JSON.parse(sol.contenido_texto);
-                    contenidoVisual = '<ul class="list-disc pl-5 text-sm text-gray-700">';
+                    contenidoVisual = '<ul class="list-disc pl-5 text-sm text-gray-800 font-medium">';
                     productos.forEach(item => { contenidoVisual += `<li><strong>${item.cantidad}</strong> x ${item.producto}</li>`; });
                     contenidoVisual += '</ul>';
                 } catch (e) { contenidoVisual = `<span class="text-gray-600 italic">${sol.contenido_texto}</span>`; }
-            } else { contenidoVisual = `<div class="text-sm text-gray-700 whitespace-pre-wrap">${sol.contenido_texto}</div>`; }
+            } else { contenidoVisual = `<div class="text-sm text-gray-800 font-medium whitespace-pre-wrap">${sol.contenido_texto}</div>`; }
 
-            let badgeColor = 'bg-gray-200 text-gray-800';
-            if(sol.estado_atencion === 'pendiente') badgeColor = 'bg-yellow-200 text-yellow-800';
-            if(sol.estado_atencion === 'despachado') badgeColor = 'bg-green-200 text-green-800';
-            if(sol.estado_atencion === 'cotizado') badgeColor = 'bg-blue-200 text-blue-800';
+            let badgeColor = 'bg-gray-100 text-gray-600 border border-gray-300';
+            if(sol.estado_atencion === 'pendiente') badgeColor = 'bg-yellow-50 text-yellow-700 border border-yellow-300';
+            if(sol.estado_atencion === 'despachado') badgeColor = 'bg-green-50 text-green-700 border border-green-300';
+            if(sol.estado_atencion === 'cotizado') badgeColor = 'bg-forestaGold text-white shadow-sm';
 
             let botonAccion = '';
-            if(sol.estado_atencion === 'pendiente') { botonAccion = `<button onclick="actualizarEstado('${sol._id}', 'despachado')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded shadow transition">📦 Despachar</button>`; }
-            else if (sol.estado_atencion === 'cotizado') { botonAccion = `<span class="text-xs text-blue-600 font-bold">💬 Cotizado por IA</span>`; }
-            else { botonAccion = `<span class="text-xs text-gray-500 font-bold">✔️ Completado</span>`; }
+            if(sol.estado_atencion === 'pendiente') { botonAccion = `<button onclick="actualizarEstado('${sol._id}', 'despachado')" class="bg-forestaBlack hover:bg-gray-800 text-white text-xs font-bold px-4 py-2 rounded shadow transition uppercase tracking-wide">📦 Despachar</button>`; }
+            else if (sol.estado_atencion === 'cotizado') { botonAccion = `<span class="text-xs text-forestaGold font-bold uppercase tracking-wide">💬 Cotizado por IA</span>`; }
+            else { botonAccion = `<span class="text-xs text-gray-400 font-bold uppercase tracking-wide">✔️ Completado</span>`; }
             
-            html += `<tr class="hover:bg-gray-50 transition"><td class="p-4 text-sm text-gray-500">${fecha}</td><td class="p-4 font-semibold text-gray-800">${sol.nombre_cliente}</td><td class="p-4 text-sm text-gray-600">+${sol.telefono_cliente}</td><td class="p-4">${contenidoVisual}</td><td class="p-4 text-center"><span class="px-3 py-1 rounded-full text-xs font-bold uppercase ${badgeColor}">${sol.estado_atencion}</span></td><td class="p-4 text-center">${botonAccion}</td></tr>`;
+            html += `<tr class="hover:bg-gray-50 transition"><td class="p-5 text-sm text-gray-500 font-medium">${fecha}</td><td class="p-5 font-bold text-forestaBlack">${sol.nombre_cliente}</td><td class="p-5 text-sm text-gray-500 font-medium">+${sol.telefono_cliente}</td><td class="p-5">${contenidoVisual}</td><td class="p-5 text-center"><span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest ${badgeColor}">${sol.estado_atencion}</span></td><td class="p-5 text-center">${botonAccion}</td></tr>`;
         });
 
-        html += `</tbody></table></div></div>
-            <script>
-                async function actualizarEstado(idPedido, nuevoEstado) {
-                    if(!confirm('¿Confirmas que este pedido ya fue empacado y despachado?')) return;
-                    try {
-                        const response = await fetch('/admin/estado', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idPedido, estado: nuevoEstado }) });
-                        if(response.ok) { window.location.reload(); } else { alert('Error al actualizar.'); }
-                    } catch (error) { console.error('Error:', error); }
-                }
-            </script>
-        </body></html>`;
+        html += `</tbody></table></div></div><script>async function actualizarEstado(idPedido, nuevoEstado) { if(!confirm('¿Confirmas que este pedido ya fue empacado y despachado?')) return; try { const response = await fetch('/admin/estado', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idPedido, estado: nuevoEstado }) }); if(response.ok) { window.location.reload(); } else { alert('Error al actualizar.'); } } catch (error) { console.error('Error:', error); } }</script></body></html>`;
         res.send(html);
     } catch (error) { res.status(500).send('Error cargando el panel.'); }
 });
@@ -187,8 +205,8 @@ app.get('/admin', async (req, res) => {
 app.get('/admin/clientes', async (req, res) => {
     try {
         const clientes = await Usuario.find().sort({ fecha_registro: -1 });
-        let html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Forestadent | CRM</title><script src="https://cdn.tailwindcss.com"></script></head><body class="bg-gray-100 p-8 font-sans"><div class="max-w-6xl mx-auto"><div class="flex justify-between items-center mb-4"><h1 class="text-3xl font-bold text-gray-800">Torre de Control B2B</h1><span class="bg-green-600 text-white px-4 py-2 rounded-lg shadow font-bold">🟢 En línea</span></div>${menuNavegacion}<div class="bg-white rounded-xl shadow-md overflow-hidden"><table class="w-full text-left border-collapse"><thead><tr class="bg-indigo-900 text-white"><th class="p-4">Cliente</th><th class="p-4">Teléfono</th><th class="p-4">Lugar de Entrega</th><th class="p-4 text-center">Acción</th></tr></thead><tbody class="divide-y divide-gray-200">`;
-        clientes.forEach(cliente => { html += `<tr class="hover:bg-gray-50 transition"><td class="p-4 font-semibold text-gray-800">${cliente.nombre_whatsapp}</td><td class="p-4 text-sm text-gray-600">+${cliente.telefono}</td><td class="p-4"><select id="lugar_${cliente._id}" class="border border-gray-300 rounded p-2 text-sm"><option value="consultorio" ${cliente.tipo_establecimiento === 'consultorio' ? 'selected' : ''}>Consultorio</option><option value="clínica" ${cliente.tipo_establecimiento === 'clínica' ? 'selected' : ''}>Clínica</option><option value="centro médico" ${cliente.tipo_establecimiento === 'centro médico' ? 'selected' : ''}>Centro Médico</option><option value="universidad" ${cliente.tipo_establecimiento === 'universidad' ? 'selected' : ''}>Universidad</option></select></td><td class="p-4 text-center"><button onclick="guardarPerfil('${cliente._id}')" class="bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded">💾 Guardar</button></td></tr>`; });
+        let html = `<!DOCTYPE html><html lang="es"><head><title>Forestadent | CRM</title>${htmlHead}</head><body class="bg-gray-50 p-8 font-sans"><div class="max-w-7xl mx-auto">${menuNavegacion}<div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100"><table class="w-full text-left border-collapse"><thead><tr class="bg-forestaBlack text-white uppercase text-sm tracking-wider"><th class="p-5">Cliente</th><th class="p-5">Teléfono</th><th class="p-5">Lugar de Entrega</th><th class="p-5 text-center">Acción</th></tr></thead><tbody class="divide-y divide-gray-100">`;
+        clientes.forEach(cliente => { html += `<tr class="hover:bg-gray-50 transition"><td class="p-5 font-bold text-forestaBlack">${cliente.nombre_whatsapp}</td><td class="p-5 text-sm text-gray-500 font-medium">+${cliente.telefono}</td><td class="p-5"><select id="lugar_${cliente._id}" class="border-2 border-gray-200 focus:border-forestaGold rounded p-2 text-sm font-medium text-forestaBlack outline-none transition"><option value="consultorio" ${cliente.tipo_establecimiento === 'consultorio' ? 'selected' : ''}>Consultorio</option><option value="clínica" ${cliente.tipo_establecimiento === 'clínica' ? 'selected' : ''}>Clínica</option><option value="centro médico" ${cliente.tipo_establecimiento === 'centro médico' ? 'selected' : ''}>Centro Médico</option><option value="universidad" ${cliente.tipo_establecimiento === 'universidad' ? 'selected' : ''}>Universidad</option></select></td><td class="p-5 text-center"><button onclick="guardarPerfil('${cliente._id}')" class="bg-forestaGold hover:bg-forestaGoldHover text-white text-xs font-bold px-4 py-2 rounded shadow uppercase tracking-wide transition">💾 Guardar</button></td></tr>`; });
         html += `</tbody></table></div></div><script>async function guardarPerfil(idCliente) { const nuevoLugar = document.getElementById('lugar_' + idCliente).value; try { const response = await fetch('/admin/clientes/actualizar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idCliente, tipo_establecimiento: nuevoLugar }) }); if(response.ok) { alert('Perfil actualizado.'); } else { alert('Error.'); } } catch (error) { console.error('Error:', error); } }</script></body></html>`;
         res.send(html);
     } catch (error) { res.status(500).send('Error cargando CRM.'); }
@@ -197,9 +215,9 @@ app.get('/admin/clientes', async (req, res) => {
 app.get('/admin/catalogo', async (req, res) => {
     try {
         const productos = await Producto.find().sort({ categoria: 1, nombre: 1 });
-        let html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Forestadent | Catálogo</title><script src="https://cdn.tailwindcss.com"></script></head><body class="bg-gray-100 p-8 font-sans"><div class="max-w-6xl mx-auto"><div class="flex justify-between items-center mb-4"><h1 class="text-3xl font-bold text-gray-800">Torre de Control B2B</h1><span class="bg-green-600 text-white px-4 py-2 rounded-lg shadow font-bold">🟢 En línea</span></div>${menuNavegacion}<div class="bg-white p-6 rounded-xl shadow-md mb-6 border-l-4 border-emerald-500"><h2 class="text-lg font-bold text-gray-800 mb-4">➕ Agregar Nuevo Producto</h2><div class="grid grid-cols-1 md:grid-cols-5 gap-4"><input type="text" id="nuevo_codigo" placeholder="SKU/Código" class="border p-2 rounded"><input type="text" id="nuevo_nombre" placeholder="Nombre del Producto" class="border p-2 rounded md:col-span-2"><input type="text" id="nueva_categoria" placeholder="Categoría (Ej: Arcos)" class="border p-2 rounded"><input type="number" step="0.01" id="nuevo_precio" placeholder="Precio Final ($)" class="border p-2 rounded"></div><button onclick="agregarProducto()" class="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-6 rounded shadow transition">Guardar en Catálogo</button></div><div class="bg-white rounded-xl shadow-md overflow-hidden"><table class="w-full text-left border-collapse"><thead><tr class="bg-emerald-800 text-white"><th class="p-4">SKU</th><th class="p-4">Nombre del Producto</th><th class="p-4">Categoría</th><th class="p-4 text-right">Precio Unitario</th><th class="p-4 text-center">Acción</th></tr></thead><tbody class="divide-y divide-gray-200">`;
-        productos.forEach(prod => { html += `<tr class="hover:bg-gray-50 transition"><td class="p-4 text-sm font-bold text-gray-700">${prod.codigo}</td><td class="p-4 font-semibold text-gray-800">${prod.nombre}</td><td class="p-4 text-sm text-gray-500">${prod.categoria}</td><td class="p-4 text-right font-bold text-emerald-600">$${prod.precio.toFixed(2)}</td><td class="p-4 text-center"><button onclick="eliminarProducto('${prod._id}')" class="bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-3 py-1 rounded shadow">❌ Borrar</button></td></tr>`; });
-        html += `</tbody></table></div></div><script>async function agregarProducto() { const codigo = document.getElementById('nuevo_codigo').value; const nombre = document.getElementById('nuevo_nombre').value; const categoria = document.getElementById('nueva_categoria').value; const precio = document.getElementById('nuevo_precio').value; if(!codigo || !nombre || !precio) return alert("Llena código, nombre y precio."); try { const response = await fetch('/admin/catalogo/agregar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo, nombre, categoria, precio: parseFloat(precio), empaque: "Paquete de 10 unidades" }) }); if(response.ok) { window.location.reload(); } else { alert('Error.'); } } catch (error) { console.error('Error:', error); } } async function eliminarProducto(idProducto) { if(!confirm("¿Borrar este producto?")) return; try { const response = await fetch('/admin/catalogo/eliminar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idProducto }) }); if(response.ok) { window.location.reload(); } else { alert('Error.'); } } catch (error) { console.error('Error:', error); } }</script></body></html>`;
+        let html = `<!DOCTYPE html><html lang="es"><head><title>Forestadent | Catálogo</title>${htmlHead}</head><body class="bg-gray-50 p-8 font-sans"><div class="max-w-7xl mx-auto">${menuNavegacion}<div class="bg-white p-8 rounded-xl shadow-lg mb-8 border-l-8 border-forestaGold"><h2 class="text-xl font-extrabold text-forestaBlack mb-6 uppercase tracking-wide">➕ Agregar Nuevo Producto</h2><div class="grid grid-cols-1 md:grid-cols-5 gap-5"><input type="text" id="nuevo_codigo" placeholder="SKU / Código" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none"><input type="text" id="nuevo_nombre" placeholder="Nombre del Producto" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none md:col-span-2"><input type="text" id="nueva_categoria" placeholder="Categoría" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none"><input type="number" step="0.01" id="nuevo_precio" placeholder="Precio ($)" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none"></div><button onclick="agregarProducto()" class="mt-6 bg-forestaBlack hover:bg-gray-800 text-white font-bold py-3 px-8 rounded shadow transition uppercase text-sm tracking-widest">Guardar en Catálogo</button></div><div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100"><table class="w-full text-left border-collapse"><thead><tr class="bg-forestaBlack text-white uppercase text-sm tracking-wider"><th class="p-5">SKU</th><th class="p-5">Nombre del Producto</th><th class="p-5">Categoría</th><th class="p-5 text-right">Precio Unitario</th><th class="p-5 text-center">Acción</th></tr></thead><tbody class="divide-y divide-gray-100">`;
+        productos.forEach(prod => { html += `<tr class="hover:bg-gray-50 transition"><td class="p-5 text-sm font-bold text-gray-500">${prod.codigo}</td><td class="p-5 font-bold text-forestaBlack">${prod.nombre}</td><td class="p-5 text-sm font-medium text-gray-500">${prod.categoria}</td><td class="p-5 text-right font-bold text-forestaGold text-lg">$${prod.precio.toFixed(2)}</td><td class="p-5 text-center"><button onclick="eliminarProducto('${prod._id}')" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold px-4 py-2 rounded transition uppercase tracking-wide">❌ Borrar</button></td></tr>`; });
+        html += `</tbody></table></div></div><script>async function agregarProducto() { const codigo = document.getElementById('nuevo_codigo').value; const nombre = document.getElementById('nuevo_nombre').value; const categoria = document.getElementById('nueva_categoria').value; const precio = document.getElementById('nuevo_precio').value; if(!codigo || !nombre || !precio) return alert("Llena código, nombre y precio."); try { const response = await fetch('/admin/catalogo/agregar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo, nombre, categoria, precio: parseFloat(precio), empaque: "Unidad" }) }); if(response.ok) { window.location.reload(); } else { alert('Error.'); } } catch (error) { console.error('Error:', error); } } async function eliminarProducto(idProducto) { if(!confirm("¿Borrar este producto?")) return; try { const response = await fetch('/admin/catalogo/eliminar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idProducto }) }); if(response.ok) { window.location.reload(); } else { alert('Error.'); } } catch (error) { console.error('Error:', error); } }</script></body></html>`;
         res.send(html);
     } catch (error) { res.status(500).send('Error cargando Catálogo.'); }
 });
@@ -274,19 +292,15 @@ app.post('/webhook', async (req, res) => {
                         const nuevaSolicitud = new Solicitud({ telefono_cliente: from, nombre_cliente: nombre_cliente, tipo_solicitud: 'cotizacion', contenido_texto: textoCotizacionIA, estado_atencion: 'cotizado' });
                         await nuevaSolicitud.save();
                         
-                        // 🚨 EL PUENTE MÁGICO DE COTIZACIÓN A PEDIDO
                         mensaje_respuesta = textoCotizacionIA + `\n\n👉 *¿Deseas convertir esta cotización en un pedido formal?*\nResponde *SI* para confirmar, o escribe *Menu* para regresar.`;
                         usuario.estado_conversacion = 'decidiendo_cotizacion'; 
                         await usuario.save();
                     } 
-                    // 🚨 NUEVO ESTADO: EL CLIENTE DECIDE SI COMPRA LA COTIZACIÓN
                     else if (usuario.estado_conversacion === 'decidiendo_cotizacion') {
                         const esAfirmativo = ['si', 'sí', 'claro', 'generar', 'pedido', 'ok', 'dale'].some(palabra => msg_body.toLowerCase().includes(palabra));
                         
                         if (esAfirmativo) {
                             await enviarMensajeInmediato(from, "⏳ *Generando tu pedido a partir de la cotización...*");
-                            
-                            // Buscamos la última cotización de este cliente
                             const ultimaCotizacion = await Solicitud.findOne({ telefono_cliente: from, tipo_solicitud: 'cotizacion' }).sort({ fecha: -1 });
                             
                             if (ultimaCotizacion) {
