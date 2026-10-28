@@ -59,8 +59,6 @@ async function analizarPedidoConIA(texto_del_cliente) {
 }
 
 // --- 4. PORTAL WEB DE ADMINISTRACIÓN ---
-
-// Ruta A: Muestra la página visual
 app.get('/admin', async (req, res) => {
     try {
         const pedidos = await Solicitud.find({ tipo_solicitud: 'pedido' }).sort({ fecha: -1 });
@@ -113,7 +111,6 @@ app.get('/admin', async (req, res) => {
 
             let badgeColor = pedido.estado_atencion === 'pendiente' ? 'bg-yellow-200 text-yellow-800' : 'bg-green-200 text-green-800';
             
-            // Lógica del botón: Si está pendiente, muestra el botón de despachar. Si no, solo muestra un check.
             let botonAccion = pedido.estado_atencion === 'pendiente' 
                 ? `<button onclick="actualizarEstado('${pedido._id}', 'despachado')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded shadow transition">📦 Despachar</button>`
                 : `<span class="text-xs text-gray-500 font-bold">✔️ Completado</span>`;
@@ -139,8 +136,6 @@ app.get('/admin', async (req, res) => {
                     </table>
                 </div>
             </div>
-
-            <!-- SCRIPTS DE LA PÁGINA PARA ENVIAR LA ORDEN AL SERVIDOR -->
             <script>
                 async function actualizarEstado(idPedido, nuevoEstado) {
                     if(!confirm('¿Confirmas que este pedido ya fue empacado y despachado?')) return;
@@ -153,7 +148,7 @@ app.get('/admin', async (req, res) => {
                         });
                         
                         if(response.ok) {
-                            window.location.reload(); // Recarga la página para ver el cambio de color
+                            window.location.reload(); 
                         } else {
                             alert('Error al actualizar el estado.');
                         }
@@ -172,12 +167,31 @@ app.get('/admin', async (req, res) => {
     }
 });
 
-// Ruta B: Recibe la orden de actualización desde el botón
 app.post('/admin/estado', async (req, res) => {
     try {
         const { id, estado } = req.body;
-        await Solicitud.findByIdAndUpdate(id, { estado_atencion: estado });
+        const pedidoActualizado = await Solicitud.findByIdAndUpdate(id, { estado_atencion: estado }, { new: true });
         console.log(`📦 Pedido ${id} actualizado a: ${estado}`);
+
+        if (estado === 'despachado' && pedidoActualizado) {
+            const mensaje_notificacion = `🚚 *¡Buenas noticias, ${pedidoActualizado.nombre_cliente}!*\n\nTu pedido ha sido empacado y acaba de ser *DESPACHADO* a tu clínica.\n\nGracias por confiar en Forestadent Ecuador. 🦷`;
+            
+            const respuestaMetaAdmin = await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    messaging_product: 'whatsapp', 
+                    to: pedidoActualizado.telefono_cliente, 
+                    type: 'text', 
+                    text: { body: mensaje_notificacion } 
+                })
+            });
+            
+            // --- ESPÍA DE DESPACHO ---
+            const datosRespuestaAdmin = await respuestaMetaAdmin.json();
+            console.log("📤 Respuesta de Meta (Despacho):", datosRespuestaAdmin);
+        }
+
         res.status(200).json({ success: true });
     } catch (error) {
         console.error('Error actualizando estado:', error);
@@ -198,9 +212,10 @@ app.get('/webhook', (req, res) => {
 
 app.post('/webhook', async (req, res) => {
     const body = req.body;
-
-    console.log("📬 ALERTA: Llegó un mensaje de Meta:", JSON.stringify(body, null, 2));
     
+    // --- ESPÍA DE ENTRADA ---
+    console.log("📬 ALERTA: Llegó un mensaje de Meta:", JSON.stringify(body, null, 2));
+
     if (body.object && body.entry && body.entry[0].changes && body.entry[0].changes[0].value.messages) {
         let valor = body.entry[0].changes[0].value;
         let from = valor.messages[0].from; 
@@ -251,10 +266,17 @@ app.post('/webhook', async (req, res) => {
                         mensaje_respuesta = `Recibí tu mensaje.\n\n_(Escribe *Menu* para ver las opciones)_`;
                     }
                 }
-                await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, {
+                
+                // --- ESPÍA DE SALIDA DE MENSAJES ---
+                const respuestaMeta = await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, {
                     method: 'POST', headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ messaging_product: 'whatsapp', to: from, type: 'text', text: { body: mensaje_respuesta } })
                 });
+                
+                const datosRespuesta = await respuestaMeta.json();
+                console.log("📤 Respuesta de Meta al intentar enviar mensaje:", datosRespuesta);
+                // ------------------------------------
+                
             } catch (error) { console.error('🔴 Error:', error); }
         }
         res.sendStatus(200); 
