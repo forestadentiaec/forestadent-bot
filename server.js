@@ -16,6 +16,7 @@ const usuarioSchema = new mongoose.Schema({
     telefono: String,
     nombre_whatsapp: String,
     estado_conversacion: { type: String, default: 'inicio' },
+    tipo_establecimiento: { type: String, default: 'consultorio' }, // <-- NUEVO: Para el CRM
     fecha_registro: { type: Date, default: Date.now }
 });
 const Usuario = mongoose.model('Usuario', usuarioSchema);
@@ -58,7 +59,17 @@ async function analizarPedidoConIA(texto_del_cliente) {
     return null;
 }
 
-// --- 4. PORTAL WEB DE ADMINISTRACIÓN ---
+// --- 4. PORTAL WEB DE ADMINISTRACIÓN (TORRE DE CONTROL) ---
+
+// Menú de navegación reutilizable para movernos entre pantallas
+const menuNavegacion = `
+    <div class="flex gap-4 mb-6">
+        <a href="/admin" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded shadow font-bold transition">📦 Pedidos</a>
+        <a href="/admin/clientes" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded shadow font-bold transition">👥 Directorio CRM</a>
+    </div>
+`;
+
+// PANTALLA 1: TABLA DE PEDIDOS
 app.get('/admin', async (req, res) => {
     try {
         const pedidos = await Solicitud.find({ tipo_solicitud: 'pedido' }).sort({ fecha: -1 });
@@ -74,11 +85,13 @@ app.get('/admin', async (req, res) => {
         </head>
         <body class="bg-gray-100 p-8 font-sans">
             <div class="max-w-6xl mx-auto">
-                <div class="flex justify-between items-center mb-8">
-                    <h1 class="text-3xl font-bold text-gray-800">📦 Panel de Pedidos B2B</h1>
-                    <span class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow">🟢 Sistema Online</span>
+                <div class="flex justify-between items-center mb-4">
+                    <h1 class="text-3xl font-bold text-gray-800">Torre de Control B2B</h1>
+                    <span class="bg-green-600 text-white px-4 py-2 rounded-lg shadow font-bold">🟢 En línea</span>
                 </div>
                 
+                ${menuNavegacion}
+
                 <div class="bg-white rounded-xl shadow-md overflow-hidden">
                     <table class="w-full text-left border-collapse">
                         <thead>
@@ -167,6 +180,110 @@ app.get('/admin', async (req, res) => {
     }
 });
 
+// PANTALLA 2: DIRECTORIO CRM (NUEVA)
+app.get('/admin/clientes', async (req, res) => {
+    try {
+        const clientes = await Usuario.find().sort({ fecha_registro: -1 });
+        
+        let html = `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Forestadent | CRM</title>
+            <script src="https://cdn.tailwindcss.com"></script>
+        </head>
+        <body class="bg-gray-100 p-8 font-sans">
+            <div class="max-w-6xl mx-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h1 class="text-3xl font-bold text-gray-800">Torre de Control B2B</h1>
+                    <span class="bg-green-600 text-white px-4 py-2 rounded-lg shadow font-bold">🟢 En línea</span>
+                </div>
+                
+                ${menuNavegacion}
+
+                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-indigo-900 text-white">
+                                <th class="p-4">Cliente (WhatsApp)</th>
+                                <th class="p-4">Teléfono</th>
+                                <th class="p-4">Lugar de Entrega</th>
+                                <th class="p-4 text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+        `;
+
+        clientes.forEach(cliente => {
+            html += `
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="p-4 font-semibold text-gray-800">${cliente.nombre_whatsapp}</td>
+                                <td class="p-4 text-sm text-gray-600">+${cliente.telefono}</td>
+                                <td class="p-4">
+                                    <select id="lugar_${cliente._id}" class="border border-gray-300 rounded p-2 text-sm text-gray-700 bg-white cursor-pointer hover:border-indigo-500 transition">
+                                        <option value="consultorio" ${cliente.tipo_establecimiento === 'consultorio' ? 'selected' : ''}>Consultorio</option>
+                                        <option value="clínica" ${cliente.tipo_establecimiento === 'clínica' ? 'selected' : ''}>Clínica</option>
+                                        <option value="centro médico" ${cliente.tipo_establecimiento === 'centro médico' ? 'selected' : ''}>Centro Médico</option>
+                                        <option value="universidad" ${cliente.tipo_establecimiento === 'universidad' ? 'selected' : ''}>Universidad</option>
+                                    </select>
+                                </td>
+                                <td class="p-4 text-center">
+                                    <button onclick="guardarPerfil('${cliente._id}')" class="bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded shadow transition">💾 Guardar</button>
+                                </td>
+                            </tr>
+            `;
+        });
+
+        html += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <script>
+                async function guardarPerfil(idCliente) {
+                    const nuevoLugar = document.getElementById('lugar_' + idCliente).value;
+                    
+                    try {
+                        const response = await fetch('/admin/clientes/actualizar', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: idCliente, tipo_establecimiento: nuevoLugar })
+                        });
+                        
+                        if(response.ok) {
+                            alert('Perfil actualizado correctamente en el CRM.');
+                        } else {
+                            alert('Error al guardar el perfil.');
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                    }
+                }
+            </script>
+        </body>
+        </html>
+        `;
+        
+        res.send(html);
+    } catch (error) {
+        res.status(500).send('Error cargando el CRM.');
+    }
+});
+
+// RUTA INTERNA: Recibir el guardado del CRM
+app.post('/admin/clientes/actualizar', async (req, res) => {
+    try {
+        const { id, tipo_establecimiento } = req.body;
+        await Usuario.findByIdAndUpdate(id, { tipo_establecimiento: tipo_establecimiento });
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
+// RUTA INTERNA: Botón Despachar (Ahora con Inteligencia CRM)
 app.post('/admin/estado', async (req, res) => {
     try {
         const { id, estado } = req.body;
@@ -174,7 +291,14 @@ app.post('/admin/estado', async (req, res) => {
         console.log(`📦 Pedido ${id} actualizado a: ${estado}`);
 
         if (estado === 'despachado' && pedidoActualizado) {
-            const mensaje_notificacion = `🚚 *¡Buenas noticias, ${pedidoActualizado.nombre_cliente}!*\n\nTu pedido ha sido empacado y acaba de ser *DESPACHADO* a tu clínica.\n\nGracias por confiar en Forestadent Ecuador. 🦷`;
+            // 1. Buscamos el perfil del cliente en el CRM
+            const perfilCliente = await Usuario.findOne({ telefono: pedidoActualizado.telefono_cliente });
+            
+            // 2. Extraemos el lugar (Si no lo encuentras, usa 'consultorio' por defecto)
+            const lugarDeEntrega = perfilCliente ? perfilCliente.tipo_establecimiento : 'consultorio';
+
+            // 3. Inyectamos la palabra exacta en el mensaje
+            const mensaje_notificacion = `🚚 *¡Buenas noticias, ${pedidoActualizado.nombre_cliente}!*\n\nTu pedido ha sido empacado y acaba de ser *DESPACHADO* a tu ${lugarDeEntrega}.\n\nGracias por confiar en Forestadent Ecuador. 🦷`;
             
             const respuestaMetaAdmin = await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, {
                 method: 'POST',
@@ -187,7 +311,6 @@ app.post('/admin/estado', async (req, res) => {
                 })
             });
             
-            // --- ESPÍA DE DESPACHO ---
             const datosRespuestaAdmin = await respuestaMetaAdmin.json();
             console.log("📤 Respuesta de Meta (Despacho):", datosRespuestaAdmin);
         }
@@ -213,7 +336,6 @@ app.get('/webhook', (req, res) => {
 app.post('/webhook', async (req, res) => {
     const body = req.body;
     
-    // --- ESPÍA DE ENTRADA ---
     console.log("📬 ALERTA: Llegó un mensaje de Meta:", JSON.stringify(body, null, 2));
 
     if (body.object && body.entry && body.entry[0].changes && body.entry[0].changes[0].value.messages) {
@@ -267,7 +389,6 @@ app.post('/webhook', async (req, res) => {
                     }
                 }
                 
-                // --- ESPÍA DE SALIDA DE MENSAJES ---
                 const respuestaMeta = await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, {
                     method: 'POST', headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ messaging_product: 'whatsapp', to: from, type: 'text', text: { body: mensaje_respuesta } })
@@ -275,7 +396,6 @@ app.post('/webhook', async (req, res) => {
                 
                 const datosRespuesta = await respuestaMeta.json();
                 console.log("📤 Respuesta de Meta al intentar enviar mensaje:", datosRespuesta);
-                // ------------------------------------
                 
             } catch (error) { console.error('🔴 Error:', error); }
         }
