@@ -160,13 +160,12 @@ const menuNavegacion = `
     </div>
 `;
 
-// PANTALLA 1: PEDIDOS (AHORA CON FILTROS INTELIGENTES)
+// PANTALLA 1: PEDIDOS
 app.get('/admin', async (req, res) => {
     try {
         const solicitudes = await Solicitud.find().sort({ fecha: -1 });
         let html = `<!DOCTYPE html><html lang="es"><head><title>Forestadent | Pedidos</title>${htmlHead}</head><body class="bg-gray-50 p-8 font-sans"><div class="max-w-7xl mx-auto">${menuNavegacion}
         
-        <!-- BARRA DE BÚSQUEDA Y FILTROS -->
         <div class="bg-white p-4 rounded-xl shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center border border-gray-100">
             <input type="text" id="buscador" onkeyup="filtrarTabla()" placeholder="🔍 Buscar por doctor o teléfono..." class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 text-sm font-medium w-full md:w-1/2 outline-none transition">
             
@@ -223,7 +222,6 @@ app.get('/admin', async (req, res) => {
                 botonAccion = `<span class="text-xs text-gray-400 font-bold uppercase tracking-wide">✔️ Completado</span>`; 
             }
             
-            // Inyectamos las variables data-tipo y data-estado para que el buscador funcione
             html += `<tr class="fila-dato hover:bg-gray-50 transition" data-tipo="${sol.tipo_solicitud}" data-estado="${sol.estado_atencion}">
                 <td class="p-5 text-sm text-gray-500 font-medium">${fecha}</td>
                 <td class="p-5 font-bold text-forestaBlack">${sol.nombre_cliente}</td>
@@ -236,7 +234,6 @@ app.get('/admin', async (req, res) => {
 
         html += `</tbody></table></div></div>
         <script>
-            // EL MOTOR DE BÚSQUEDA EN TIEMPO REAL
             function filtrarTabla() {
                 let texto = document.getElementById('buscador').value.toLowerCase();
                 let tipo = document.getElementById('filtroTipo').value;
@@ -279,6 +276,7 @@ app.get('/admin', async (req, res) => {
     } catch (error) { res.status(500).send('Error cargando el panel.'); }
 });
 
+// PANTALLA 2: CRM
 app.get('/admin/clientes', async (req, res) => {
     try {
         const clientesRaw = await Usuario.find().sort({ fecha_registro: -1 });
@@ -305,14 +303,82 @@ app.get('/admin/clientes', async (req, res) => {
     } catch (error) { res.status(500).send('Error cargando CRM.'); }
 });
 
+// PANTALLA 3: CATÁLOGO (CON EDICIÓN DIRECTA)
 app.get('/admin/catalogo', async (req, res) => {
     try {
         const productos = await Producto.find().sort({ categoria: 1, nombre: 1 });
-        let html = `<!DOCTYPE html><html lang="es"><head><title>Forestadent | Catálogo</title>${htmlHead}</head><body class="bg-gray-50 p-8 font-sans"><div class="max-w-7xl mx-auto">${menuNavegacion}<div class="bg-white p-8 rounded-xl shadow-lg mb-8 border-l-8 border-forestaGold"><h2 class="text-xl font-extrabold text-forestaBlack mb-6 uppercase tracking-wide">➕ Agregar Nuevo Producto</h2><div class="grid grid-cols-1 md:grid-cols-5 gap-5"><input type="text" id="nuevo_codigo" placeholder="SKU / Código" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none"><input type="text" id="nuevo_nombre" placeholder="Nombre del Producto" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none md:col-span-2"><input type="text" id="nueva_categoria" placeholder="Categoría" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none"><input type="number" step="0.01" id="nuevo_precio" placeholder="Precio ($)" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none"></div><button onclick="agregarProducto()" class="mt-6 bg-forestaBlack hover:bg-gray-800 text-white font-bold py-3 px-8 rounded shadow transition uppercase text-sm tracking-widest">Guardar en Catálogo</button></div><div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100"><table class="w-full text-left border-collapse"><thead><tr class="bg-forestaBlack text-white uppercase text-sm tracking-wider"><th class="p-5">SKU</th><th class="p-5">Nombre del Producto</th><th class="p-5">Categoría</th><th class="p-5 text-right">Precio Unitario</th><th class="p-5 text-center">Acción</th></tr></thead><tbody class="divide-y divide-gray-100">`;
-        productos.forEach(prod => { html += `<tr class="hover:bg-gray-50 transition"><td class="p-5 text-sm font-bold text-gray-500">${prod.codigo}</td><td class="p-5 font-bold text-forestaBlack">${prod.nombre}</td><td class="p-5 text-sm font-medium text-gray-500">${prod.categoria}</td><td class="p-5 text-right font-bold text-forestaGold text-lg">$${prod.precio.toFixed(2)}</td><td class="p-5 text-center"><button onclick="eliminarProducto('${prod._id}')" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold px-4 py-2 rounded transition uppercase tracking-wide">❌ Borrar</button></td></tr>`; });
-        html += `</tbody></table></div></div><script>async function agregarProducto() { const codigo = document.getElementById('nuevo_codigo').value; const nombre = document.getElementById('nuevo_nombre').value; const categoria = document.getElementById('nueva_categoria').value; const precio = document.getElementById('nuevo_precio').value; if(!codigo || !nombre || !precio) return alert("Llena código, nombre y precio."); try { const response = await fetch('/admin/catalogo/agregar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo, nombre, categoria, precio: parseFloat(precio), empaque: "Unidad" }) }); if(response.ok) { window.location.reload(); } else { alert('Error.'); } } catch (error) { console.error('Error:', error); } } async function eliminarProducto(idProducto) { if(!confirm("¿Borrar este producto?")) return; try { const response = await fetch('/admin/catalogo/eliminar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idProducto }) }); if(response.ok) { window.location.reload(); } else { alert('Error.'); } } catch (error) { console.error('Error:', error); } }</script></body></html>`;
+        let html = `<!DOCTYPE html><html lang="es"><head><title>Forestadent | Catálogo</title>${htmlHead}</head><body class="bg-gray-50 p-8 font-sans"><div class="max-w-7xl mx-auto">${menuNavegacion}
+        
+        <div class="bg-white p-8 rounded-xl shadow-lg mb-8 border-l-8 border-forestaGold">
+            <h2 class="text-xl font-extrabold text-forestaBlack mb-6 uppercase tracking-wide">➕ Agregar Nuevo Producto</h2>
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-5">
+                <input type="text" id="nuevo_codigo" placeholder="SKU / Código" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none">
+                <input type="text" id="nuevo_nombre" placeholder="Nombre del Producto" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none md:col-span-2">
+                <input type="text" id="nueva_categoria" placeholder="Categoría" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none">
+                <input type="text" id="nuevo_empaque" placeholder="Empaque (Ej: Paquete de 10 unidades)" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none">
+                <input type="number" step="0.01" id="nuevo_precio" placeholder="Precio ($)" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none">
+            </div>
+            <button onclick="agregarProducto()" class="mt-6 bg-forestaBlack hover:bg-gray-800 text-white font-bold py-3 px-8 rounded shadow transition uppercase text-sm tracking-widest">Guardar en Catálogo</button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100"><table class="w-full text-left border-collapse"><thead><tr class="bg-forestaBlack text-white uppercase text-sm tracking-wider"><th class="p-5">SKU</th><th class="p-5">Nombre del Producto</th><th class="p-5">Empaque</th><th class="p-5">Categoría</th><th class="p-5 text-right w-32">Precio ($)</th><th class="p-5 text-center">Acción</th></tr></thead><tbody class="divide-y divide-gray-100">`;
+        
+        productos.forEach(prod => { 
+            html += `<tr class="hover:bg-gray-50 transition">
+                <td class="p-5 text-sm font-bold text-gray-500">${prod.codigo}</td>
+                <td class="p-5 font-bold text-forestaBlack">${prod.nombre}</td>
+                <td class="p-5 text-sm font-medium text-gray-500">${prod.empaque}</td>
+                <td class="p-5 text-sm font-medium text-gray-500">${prod.categoria}</td>
+                <td class="p-5 text-right">
+                    <input type="number" step="0.01" id="precio_${prod._id}" value="${prod.precio.toFixed(2)}" class="border border-gray-300 focus:border-forestaGold rounded p-1 w-20 text-right font-bold text-forestaGold outline-none">
+                </td>
+                <td class="p-5 text-center space-x-2">
+                    <button onclick="editarPrecio('${prod._id}')" class="bg-forestaGold hover:bg-forestaGoldHover text-white text-xs font-bold px-3 py-2 rounded transition uppercase tracking-wide">✏️ Editar</button>
+                    <button onclick="eliminarProducto('${prod._id}')" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold px-3 py-2 rounded transition uppercase tracking-wide">❌</button>
+                </td>
+            </tr>`; 
+        });
+        
+        html += `</tbody></table></div></div>
+        <script>
+            async function agregarProducto() { 
+                const codigo = document.getElementById('nuevo_codigo').value; 
+                const nombre = document.getElementById('nuevo_nombre').value; 
+                const categoria = document.getElementById('nueva_categoria').value; 
+                const empaque = document.getElementById('nuevo_empaque').value; 
+                const precio = document.getElementById('nuevo_precio').value; 
+                if(!codigo || !nombre || !precio) return alert("Llena código, nombre y precio."); 
+                try { 
+                    const response = await fetch('/admin/catalogo/agregar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo, nombre, categoria, precio: parseFloat(precio), empaque: empaque || "Unidad" }) }); 
+                    if(response.ok) { window.location.reload(); } else { alert('Error.'); } 
+                } catch (error) { console.error('Error:', error); } 
+            } 
+            
+            // NUEVA FUNCIÓN: EDITAR PRECIO DIRECTO
+            async function editarPrecio(idProducto) {
+                const nuevoPrecio = document.getElementById('precio_' + idProducto).value;
+                try {
+                    const response = await fetch('/admin/catalogo/editar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idProducto, precio: parseFloat(nuevoPrecio) }) });
+                    if(response.ok) { alert('Precio actualizado con éxito.'); } else { alert('Error actualizando precio.'); }
+                } catch (error) { console.error('Error:', error); }
+            }
+
+            async function eliminarProducto(idProducto) { 
+                if(!confirm("¿Seguro que deseas borrar este producto permanentemente?")) return; 
+                try { 
+                    const response = await fetch('/admin/catalogo/eliminar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idProducto }) }); 
+                    if(response.ok) { window.location.reload(); } else { alert('Error.'); } 
+                } catch (error) { console.error('Error:', error); } 
+            }
+        </script></body></html>`;
         res.send(html);
     } catch (error) { res.status(500).send('Error cargando Catálogo.'); }
+});
+
+// NUEVA RUTA PARA GUARDAR LA EDICIÓN DEL PRECIO
+app.post('/admin/catalogo/editar', async (req, res) => { 
+    try { await Producto.findByIdAndUpdate(req.body.id, { precio: req.body.precio }); res.status(200).json({ success: true }); } 
+    catch (error) { res.status(500).json({ success: false }); } 
 });
 
 app.post('/admin/catalogo/agregar', async (req, res) => { try { await new Producto(req.body).save(); res.status(200).json({ success: true }); } catch (error) { res.status(500).json({ success: false }); } });
@@ -327,7 +393,6 @@ app.post('/admin/recordar-cotizacion', async (req, res) => {
         res.status(200).json({ success: true });
     } catch (error) { res.status(500).json({ success: false }); }
 });
-
 app.post('/admin/estado', async (req, res) => {
     try {
         const { id, estado } = req.body;
