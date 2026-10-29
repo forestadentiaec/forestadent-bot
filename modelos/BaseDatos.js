@@ -49,6 +49,19 @@ const campanaSchema = new mongoose.Schema({
 });
 const Campana = mongoose.model('Campana', campanaSchema);
 
+// 🚨 5. NUEVO: SISTEMA DE TICKETS Y EVENTOS
+const ticketSchema = new mongoose.Schema({
+    id_unico: String, // Código alfanumérico del ticket (Ej: FST-A8F9)
+    telefono_cliente: String,
+    nombre_cliente: String,
+    nombre_evento: String,
+    asistencia_confirmada: { type: Boolean, default: false }, // Cambiará a true cuando lo escanees
+    fecha_emision: { type: Date, default: Date.now },
+    fecha_escaneo: { type: Date, default: null }
+});
+const Ticket = mongoose.model('Ticket', ticketSchema);
+
+
 // FUNCIÓN DE INICIO
 const productosIniciales = [
     { codigo: "202-3743", nombre: "Arco acero recto superior .017x.025", categoria: "Arcos", precio: 1.00, empaque: "Paquete de 10 unidades" },
@@ -62,11 +75,12 @@ async function inicializarCatalogo() {
     } catch (error) { console.error("Error inicializando catálogo:", error); }
 }
 
-// 🚨 EXPORTAMOS LOS MODELOS PARA QUE EL RESTO DEL SISTEMA LOS PUEDA USAR
+// 🚨 EXPORTAMOS LOS MODELOS INCLUYENDO EL TICKET
 module.exports = {
     Usuario,
     Solicitud,
     Producto,
     Campana,
+    Ticket,
     inicializarCatalogo
 };
