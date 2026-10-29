@@ -79,8 +79,7 @@ async function analizarPedidoConIA(texto_del_cliente) {
 async function generarCotizacionConIA(texto_del_cliente, catalogo) {
     const modelos = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
     let catalogoTexto = catalogo.map(p => `- ${p.nombre} | Precio por Unidad: $${(p.precio || 0).toFixed(2)} | Viene en: ${p.empaque}`).join('\n');
-    
-    const prompt = `Eres el experto comercial de Forestadent Ecuador. El cliente solicita cotizar: "${texto_del_cliente}"\nAquí tienes la base de datos de productos (Precios con IVA incluido):\n${catalogoTexto}\nREGLA DE ORO COMERCIAL: El "Precio por Unidad" es por 1 sola pieza suelta.\n- Si pide "piezas", multiplicas cantidad x precio.\n- Si pide "paquete" o "funda", lees "Viene en" y multiplicas. Ejemplo: 1 paquete = 10 unidades x Precio Unidad.\nFormato OBLIGATORIO: Saludo amable, Lista detallada (Cantidad x Nombre = Subtotal), Total final a pagar. 🚨 PROHIBIDO TERMINAR CON PREGUNTAS.`;
+    const prompt = `Eres el experto comercial de Forestadent Ecuador. El cliente solicita cotizar: "${texto_del_cliente}"\nAquí tienes la base de datos de productos:\n${catalogoTexto}\nREGLA: El "Precio Unidad" es por 1 pieza suelta.\n- Si pide "paquete" o "funda", lees "Viene en" y multiplicas.\nFormato: Saludo amable, Lista detallada (Cant x Nombre = Subtotal), Total a pagar. 🚨 PROHIBIDO TERMINAR CON PREGUNTAS.`;
 
     for (const modelo of modelos) {
         try {
@@ -101,17 +100,9 @@ const htmlHead = `
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- 🚨 LIBRERÍA PARA CONVERTIR HTML A PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script>
-        tailwind.config = { 
-            theme: { 
-                extend: { 
-                    colors: { forestaBlack: '#111111', forestaGold: '#B4975A', forestaGoldHover: '#9a814b' },
-                    fontFamily: { sans: ['Montserrat', 'sans-serif'] }
-                } 
-            } 
-        }
+        tailwind.config = { theme: { extend: { colors: { forestaBlack: '#111111', forestaGold: '#B4975A', forestaGoldHover: '#9a814b' }, fontFamily: { sans: ['Montserrat', 'sans-serif'] } } } }
     </script>
 `;
 
@@ -136,58 +127,109 @@ const menuNavegacion = `
 `;
 const scriptExportarExcel = `<script>function exportarExcel(nombreArchivo) { let tableOriginal = document.querySelector("table"); let tableCopia = document.createElement("table"); let rows = tableOriginal.querySelectorAll("tr"); rows.forEach(row => { if(row.style.display !== 'none') { let newRow = row.cloneNode(true); if(newRow.children.length > 0) { newRow.removeChild(newRow.lastElementChild); } let inputs = newRow.querySelectorAll("input, select, textarea"); inputs.forEach(input => { let textNode = document.createTextNode(input.value || input.options?.[input.selectedIndex]?.text || ''); input.parentNode.replaceChild(textNode, input); }); tableCopia.appendChild(newRow); } }); let wb = XLSX.utils.table_to_book(tableCopia, {sheet: "Reporte"}); XLSX.writeFile(wb, nombreArchivo + ".xlsx"); }</script>`;
 
-// 🚨 RUTA PÚBLICA PARA PROFORMAS WEB
+// 🚨 PANTALLA BROADCAST ACTUALIZADA PARA MANEJO DE ERRORES
+app.get('/admin/broadcast', async (req, res) => {
+    try {
+        const clientes = await Usuario.find().sort({ nombre_whatsapp: 1 });
+        let listaCheckboxes = '';
+        clientes.forEach(c => { listaCheckboxes += `<label class="flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg cursor-pointer border border-transparent hover:border-gray-200 transition"><input type="checkbox" value="${c.telefono}" class="checkbox-manual w-5 h-5 text-green-600 rounded focus:ring-green-500"><span class="text-sm font-bold text-forestaBlack">${c.nombre_whatsapp} <span class="text-gray-400 font-medium ml-1">(+${c.telefono})</span></span></label>`; });
+        
+        let html = `<!DOCTYPE html><html lang="es"><head><title>Forestadent | Broadcast</title>${htmlHead}</head><body class="bg-gray-50 p-8 font-sans"><div class="max-w-7xl mx-auto">${menuNavegacion}<div class="bg-white p-8 rounded-xl shadow-lg border-l-8 border-green-600"><h2 class="text-2xl font-extrabold text-forestaBlack mb-2 uppercase tracking-wide">📢 Lanzar Campaña Masiva</h2><p class="text-gray-500 font-medium mb-8">Envía promociones o avisos a tus doctores directamente por WhatsApp.</p><div class="grid grid-cols-1 md:grid-cols-2 gap-8"><div><label class="block text-sm font-bold text-forestaBlack uppercase mb-2">1. Selecciona tu público objetivo</label><select id="tipoFiltro" onchange="mostrarOpcionFiltro()" class="w-full border-2 border-gray-200 focus:border-green-600 rounded p-4 text-sm font-bold text-forestaBlack outline-none mb-4 cursor-pointer"><option value="todos">🌍 Enviar a TODOS los clientes</option><option value="establecimiento">🏥 Filtrar por Tipo de Establecimiento</option><option value="etiqueta">🏷️ Filtrar por Etiqueta del CRM</option><option value="manual">🎯 Seleccionar doctores manualmente</option></select><div id="cajaValorEstablecimiento" class="hidden mb-4 transition-all"><select id="valorEstablecimiento" class="w-full border-2 border-gray-200 focus:border-green-600 rounded p-4 text-sm font-medium text-forestaBlack outline-none cursor-pointer"><option value="consultorio">Consultorio</option><option value="clínica">Clínica</option><option value="centro médico">Centro Médico</option><option value="universidad">Universidad</option></select></div><div id="cajaValorEtiqueta" class="hidden mb-4 transition-all"><input type="text" id="valorEtiqueta" placeholder="Escribe la etiqueta exacta (Ej: VIP, Acero, Moroso)" class="w-full border-2 border-gray-200 focus:border-green-600 rounded p-4 text-sm font-medium text-forestaBlack outline-none"></div><div id="cajaValorManual" class="hidden mb-4 transition-all"><div class="border-2 border-gray-200 rounded p-4 max-h-60 overflow-y-auto bg-gray-50"><p class="text-xs font-bold text-gray-500 uppercase mb-3">Marca los doctores específicos:</p>${listaCheckboxes}</div></div><label class="block text-sm font-bold text-forestaBlack uppercase mb-0 mt-6">2. Escribe tu mensaje corporativo</label><div class="flex flex-wrap gap-x-4 gap-y-2 mb-2 mt-2 bg-gray-50 p-3 rounded border border-gray-200"><p class="text-xs text-gray-600 font-bold">🪄 Personalizar: <span class="bg-white px-1 border border-gray-300 rounded text-forestaBlack cursor-default">{{nombre}}</span></p><p class="text-xs text-gray-600 font-bold">✒️ Formato WhatsApp: <span class="bg-white px-1 border border-gray-300 rounded text-forestaBlack font-bold cursor-default">*Negrita*</span> y <span class="bg-white px-1 border border-gray-300 rounded text-forestaBlack italic cursor-default">_Cursiva_</span></p></div><textarea id="mensajeCampana" rows="7" placeholder="¡Hola {{nombre}}! 👋..." class="w-full border-2 border-gray-200 focus:border-green-600 rounded p-4 text-sm font-medium text-forestaBlack outline-none"></textarea><button onclick="dispararCampana()" id="btnEnviar" class="mt-6 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-8 rounded shadow transition uppercase text-sm tracking-widest flex justify-center items-center gap-2">🚀 Enviar Campaña por WhatsApp</button><p id="textoCarga" class="text-sm text-green-600 font-bold mt-4 text-center hidden">⏳ Disparando y analizando respuesta de Meta...</p></div><div class="bg-gray-100 rounded-xl p-6 flex flex-col items-center justify-center border-4 border-dashed border-gray-200"><img src="/logo-vector-forestadent.webp" class="h-10 mb-4 opacity-50"><div class="bg-white p-4 rounded-xl shadow-sm w-full max-w-sm relative"><p class="text-xs text-gray-400 font-bold mb-2 border-b border-gray-100 pb-2">Así lo verá el Doctor en su celular:</p><p id="vistaPrevia" class="text-sm text-gray-800 whitespace-pre-wrap font-medium">Empieza a escribir tu mensaje...</p></div></div></div></div>
+        <script>
+            document.getElementById('mensajeCampana').addEventListener('input', function(e) { let texto = e.target.value || 'Empieza a escribir tu mensaje...'; texto = texto.replace(/{{nombre}}/gi, 'Dr. Juan Pérez'); texto = texto.replace(/</g, "&lt;").replace(/>/g, "&gt;"); texto = texto.replace(/\\*(.*?)\\*/g, '<strong>$1</strong>'); texto = texto.replace(/_(.*?)_/g, '<em>$1</em>'); texto = texto.replace(/~(.*?)~/g, '<del>$1</del>'); document.getElementById('vistaPrevia').innerHTML = texto; }); 
+            function mostrarOpcionFiltro() { const filtro = document.getElementById('tipoFiltro').value; document.getElementById('cajaValorEstablecimiento').classList.add('hidden'); document.getElementById('cajaValorEtiqueta').classList.add('hidden'); document.getElementById('cajaValorManual').classList.add('hidden'); if (filtro === 'establecimiento') document.getElementById('cajaValorEstablecimiento').classList.remove('hidden'); if (filtro === 'etiqueta') document.getElementById('cajaValorEtiqueta').classList.remove('hidden'); if (filtro === 'manual') document.getElementById('cajaValorManual').classList.remove('hidden'); } 
+            async function dispararCampana() { 
+                const mensaje = document.getElementById('mensajeCampana').value; const filtro = document.getElementById('tipoFiltro').value; let valorFiltro = ''; let telefonosManuales = []; 
+                if (filtro === 'establecimiento') valorFiltro = document.getElementById('valorEstablecimiento').value; 
+                if (filtro === 'etiqueta') valorFiltro = document.getElementById('valorEtiqueta').value; 
+                if (filtro === 'manual') { const checkboxes = document.querySelectorAll('.checkbox-manual:checked'); checkboxes.forEach(cb => telefonosManuales.push(cb.value)); if (telefonosManuales.length === 0) return alert("Selecciona al menos un doctor."); } 
+                if (!mensaje.trim()) return alert("El mensaje está vacío."); 
+                if (!confirm('🚨 ATENCIÓN: Estás a punto de enviar un mensaje oficial por WhatsApp. ¿Deseas proceder?')) return; 
+                
+                document.getElementById('btnEnviar').classList.add('hidden'); 
+                document.getElementById('textoCarga').classList.remove('hidden'); 
+                
+                try { 
+                    const response = await fetch('/admin/broadcast/enviar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mensaje, filtro, valorFiltro, telefonosManuales }) }); 
+                    const result = await response.json(); 
+                    if (result.success) { 
+                        alert('✅ ¡Proceso terminado!\n\nMensajes intentados: ' + result.intentos); 
+                        window.location.reload(); 
+                    } else { 
+                        // 🚨 AQUÍ MOSTRAREMOS EL ERROR EXACTO DE META AL USUARIO
+                        alert('❌ META BLOQUEÓ EL MENSAJE:\\n\\n' + result.error_meta); 
+                    } 
+                } catch (error) { 
+                    console.error(error); alert('Error de conexión con el servidor.'); 
+                } finally { 
+                    document.getElementById('btnEnviar').classList.remove('hidden'); document.getElementById('textoCarga').classList.add('hidden'); 
+                } 
+            }
+        </script></body></html>`;
+        res.send(html);
+    } catch (error) { res.status(500).send("Error."); }
+});
+
+// 🚨 MOTOR DE BROADCAST CON ESCÁNER DE ERRORES DE META
+app.post('/admin/broadcast/enviar', async (req, res) => {
+    try {
+        const { mensaje, filtro, valorFiltro, telefonosManuales } = req.body;
+        let query = {};
+        if (filtro === 'establecimiento' && valorFiltro) { query = { tipo_establecimiento: valorFiltro }; } 
+        else if (filtro === 'etiqueta' && valorFiltro) { query = { etiquetas: { $regex: valorFiltro, $options: 'i' } }; } 
+        else if (filtro === 'manual' && telefonosManuales && telefonosManuales.length > 0) { query = { telefono: { $in: telefonosManuales } }; }
+        
+        const destinatarios = await Usuario.find(query);
+        let erroresEncontrados = [];
+
+        for (const dest of destinatarios) {
+            let mensajePersonalizado = mensaje.replace(/{{nombre}}/gi, dest.nombre_whatsapp);
+            
+            const nuevaNota = (dest.notas || '') + `\n[📢 Campaña enviada el ${new Date().toLocaleDateString('es-EC')}]: ` + mensajePersonalizado.substring(0, 30) + '...';
+            await Usuario.findByIdAndUpdate(dest._id, { notas: nuevaNota.trim() });
+
+            // Enviamos el mensaje a Meta y ESCUCHAMOS su respuesta
+            const metaResponse = await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, { 
+                method: 'POST', 
+                headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ messaging_product: 'whatsapp', to: dest.telefono, type: 'text', text: { body: mensajePersonalizado } }) 
+            });
+            
+            const metaData = await metaResponse.json();
+            
+            // Si Meta responde con un error, lo guardamos para mostrárselo a Néstor
+            if (metaData.error) {
+                erroresEncontrados.push(`Error al enviar a +${dest.telefono} (${dest.nombre_whatsapp}): ${metaData.error.message}`);
+            }
+
+            await new Promise(r => setTimeout(r, 500));
+        }
+        
+        if (erroresEncontrados.length > 0) {
+            // Devolvemos el primer error encontrado para que salga en la alerta de la pantalla
+            res.status(200).json({ success: false, error_meta: erroresEncontrados[0] });
+        } else {
+            res.status(200).json({ success: true, intentos: destinatarios.length });
+        }
+    } catch (error) { 
+        res.status(500).json({ success: false, error_meta: "Fallo interno del servidor en Render." }); 
+    }
+});
+
+
+// 🚨 RUTAS DEL PORTAL
 app.get('/proforma/:id', async (req, res) => {
     try {
         const solicitud = await Solicitud.findById(req.params.id);
         if (!solicitud || solicitud.tipo_solicitud !== 'cotizacion') return res.status(404).send('Proforma no encontrada.');
-
         const fechaCorta = new Date(solicitud.fecha).toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
         const numeroProforma = solicitud._id.toString().slice(-6).toUpperCase();
         let textoLimpio = solicitud.contenido_texto.replace(/\*/g, '').replace(/_/g, '').replace(/~/g, '');
-
-        let html = `<!DOCTYPE html><html lang="es"><head><title>Proforma | Forestadent</title>${htmlHead}</head>
-        <body class="bg-gray-100 p-4 md:p-10 font-sans">
-            <div id="documento-pdf" class="bg-white p-8 md:p-12 rounded-xl shadow-2xl max-w-3xl mx-auto border-t-8 border-forestaGold">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b-2 border-gray-100 pb-6">
-                    <img src="/logo-vector-forestadent.webp" class="h-12 md:h-16 mb-4 md:mb-0" onerror="this.style.display='none'; this.insertAdjacentHTML('afterend', '<h2 class=\\'text-2xl font-black text-forestaBlack\\'>FORESTADENT</h2>')">
-                    <div class="text-left md:text-right">
-                        <h1 class="text-2xl md:text-3xl font-extrabold text-forestaBlack uppercase tracking-widest">Proforma Comercial</h1>
-                        <p class="text-sm font-bold text-forestaGold tracking-widest mt-1">DOC-${numeroProforma}</p>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div>
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Preparado para:</p>
-                        <p class="text-lg font-bold text-forestaBlack">${solicitud.nombre_cliente}</p>
-                        <p class="text-sm font-medium text-gray-500">+${solicitud.telefono_cliente}</p>
-                    </div>
-                    <div class="md:text-right">
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Fecha de Emisión:</p>
-                        <p class="text-sm font-bold text-gray-800">${fechaCorta}</p>
-                        <p class="text-xs font-medium text-gray-400 mt-2">Validez: 15 días</p>
-                    </div>
-                </div>
-                <div class="bg-gray-50 p-6 md:p-8 rounded-xl border border-gray-200 mb-10">
-                    <pre class="whitespace-pre-wrap font-sans text-sm md:text-base font-medium text-gray-800 leading-relaxed">${textoLimpio}</pre>
-                </div>
-                <div class="text-center border-t-2 border-gray-100 pt-6">
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Documento Generado por IA • Forestadent Ecuador B2B</p>
-                    <p class="text-xs font-medium text-gray-400 mt-1">Los precios incluyen impuestos de ley aplicables.</p>
-                </div>
-            </div>
-            <div class="text-center mt-8 space-x-4 hide-on-print">
-                <button onclick="descargarPDF()" class="bg-forestaBlack hover:bg-gray-800 text-white font-bold py-4 px-8 rounded shadow-lg uppercase text-sm tracking-widest transition transform hover:scale-105">📥 Descargar Proforma en PDF</button>
-            </div>
-            <style>@media print { .hide-on-print { display: none !important; } body { background-color: white; padding: 0; } #documento-pdf { box-shadow: none; border-top: none; } }</style>
-            <script>function descargarPDF() { const elemento = document.getElementById('documento-pdf'); const opciones = { margin: 10, filename: 'Proforma_Forestadent_${numeroProforma}.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }; html2pdf().set(opciones).from(elemento).save(); }</script>
-        </body></html>`;
+        let html = `<!DOCTYPE html><html lang="es"><head><title>Proforma | Forestadent</title>${htmlHead}</head><body class="bg-gray-100 p-4 md:p-10 font-sans"><div id="documento-pdf" class="bg-white p-8 md:p-12 rounded-xl shadow-2xl max-w-3xl mx-auto border-t-8 border-forestaGold"><div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b-2 border-gray-100 pb-6"><img src="/logo-vector-forestadent.webp" class="h-12 md:h-16 mb-4 md:mb-0" onerror="this.style.display='none'; this.insertAdjacentHTML('afterend', '<h2 class=\\'text-2xl font-black text-forestaBlack\\'>FORESTADENT</h2>')"><div class="text-left md:text-right"><h1 class="text-2xl md:text-3xl font-extrabold text-forestaBlack uppercase tracking-widest">Proforma Comercial</h1><p class="text-sm font-bold text-forestaGold tracking-widest mt-1">DOC-${numeroProforma}</p></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"><div><p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Preparado para:</p><p class="text-lg font-bold text-forestaBlack">${solicitud.nombre_cliente}</p><p class="text-sm font-medium text-gray-500">+${solicitud.telefono_cliente}</p></div><div class="md:text-right"><p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Fecha de Emisión:</p><p class="text-sm font-bold text-gray-800">${fechaCorta}</p><p class="text-xs font-medium text-gray-400 mt-2">Validez: 15 días</p></div></div><div class="bg-gray-50 p-6 md:p-8 rounded-xl border border-gray-200 mb-10"><pre class="whitespace-pre-wrap font-sans text-sm md:text-base font-medium text-gray-800 leading-relaxed">${textoLimpio}</pre></div><div class="text-center border-t-2 border-gray-100 pt-6"><p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Documento Generado por IA • Forestadent Ecuador B2B</p><p class="text-xs font-medium text-gray-400 mt-1">Los precios incluyen impuestos de ley aplicables.</p></div></div><div class="text-center mt-8 space-x-4 hide-on-print"><button onclick="descargarPDF()" class="bg-forestaBlack hover:bg-gray-800 text-white font-bold py-4 px-8 rounded shadow-lg uppercase text-sm tracking-widest transition transform hover:scale-105">📥 Descargar Proforma en PDF</button></div><style>@media print { .hide-on-print { display: none !important; } body { background-color: white; padding: 0; } #documento-pdf { box-shadow: none; border-top: none; } }</style><script>function descargarPDF() { const elemento = document.getElementById('documento-pdf'); const opciones = { margin: 10, filename: 'Proforma_Forestadent_${numeroProforma}.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }; html2pdf().set(opciones).from(elemento).save(); }</script></body></html>`;
         res.send(html);
-    } catch (error) { res.status(500).send("Error al generar la proforma."); }
+    } catch (error) { res.status(500).send("Error."); }
 });
 
-
-// MÓDULOS DEL ADMINISTRADOR (PANEL DE CONTROL)
 app.get('/admin/dashboard', async (req, res) => {
     try {
         const totalClientes = await Usuario.countDocuments();
@@ -242,39 +284,6 @@ app.get('/admin/catalogo', async (req, res) => {
     } catch (error) { res.status(500).send('Error.'); }
 });
 
-app.get('/admin/broadcast', async (req, res) => {
-    try {
-        const clientes = await Usuario.find().sort({ nombre_whatsapp: 1 });
-        let listaCheckboxes = '';
-        clientes.forEach(c => { listaCheckboxes += `<label class="flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg cursor-pointer border border-transparent hover:border-gray-200 transition"><input type="checkbox" value="${c.telefono}" class="checkbox-manual w-5 h-5 text-green-600 rounded focus:ring-green-500"><span class="text-sm font-bold text-forestaBlack">${c.nombre_whatsapp} <span class="text-gray-400 font-medium ml-1">(+${c.telefono})</span></span></label>`; });
-        let html = `<!DOCTYPE html><html lang="es"><head><title>Forestadent | Broadcast</title>${htmlHead}</head><body class="bg-gray-50 p-8 font-sans"><div class="max-w-7xl mx-auto">${menuNavegacion}<div class="bg-white p-8 rounded-xl shadow-lg border-l-8 border-green-600"><h2 class="text-2xl font-extrabold text-forestaBlack mb-2 uppercase tracking-wide">📢 Lanzar Campaña Masiva</h2><p class="text-gray-500 font-medium mb-8">Envía promociones o avisos a tus doctores directamente por WhatsApp.</p><div class="grid grid-cols-1 md:grid-cols-2 gap-8"><div><label class="block text-sm font-bold text-forestaBlack uppercase mb-2">1. Selecciona tu público objetivo</label><select id="tipoFiltro" onchange="mostrarOpcionFiltro()" class="w-full border-2 border-gray-200 focus:border-green-600 rounded p-4 text-sm font-bold text-forestaBlack outline-none mb-4 cursor-pointer"><option value="todos">🌍 Enviar a TODOS los clientes</option><option value="establecimiento">🏥 Filtrar por Tipo de Establecimiento</option><option value="etiqueta">🏷️ Filtrar por Etiqueta del CRM</option><option value="manual">🎯 Seleccionar doctores manualmente</option></select><div id="cajaValorEstablecimiento" class="hidden mb-4 transition-all"><select id="valorEstablecimiento" class="w-full border-2 border-gray-200 focus:border-green-600 rounded p-4 text-sm font-medium text-forestaBlack outline-none cursor-pointer"><option value="consultorio">Consultorio</option><option value="clínica">Clínica</option><option value="centro médico">Centro Médico</option><option value="universidad">Universidad</option></select></div><div id="cajaValorEtiqueta" class="hidden mb-4 transition-all"><input type="text" id="valorEtiqueta" placeholder="Escribe la etiqueta exacta (Ej: VIP, Acero, Moroso)" class="w-full border-2 border-gray-200 focus:border-green-600 rounded p-4 text-sm font-medium text-forestaBlack outline-none"></div><div id="cajaValorManual" class="hidden mb-4 transition-all"><div class="border-2 border-gray-200 rounded p-4 max-h-60 overflow-y-auto bg-gray-50"><p class="text-xs font-bold text-gray-500 uppercase mb-3">Marca los doctores específicos:</p>${listaCheckboxes}</div></div><label class="block text-sm font-bold text-forestaBlack uppercase mb-0 mt-6">2. Escribe tu mensaje corporativo</label><div class="flex flex-wrap gap-x-4 gap-y-2 mb-2 mt-2 bg-gray-50 p-3 rounded border border-gray-200"><p class="text-xs text-gray-600 font-bold">🪄 Personalizar: <span class="bg-white px-1 border border-gray-300 rounded text-forestaBlack cursor-default">{{nombre}}</span></p><p class="text-xs text-gray-600 font-bold">✒️ Formato WhatsApp: <span class="bg-white px-1 border border-gray-300 rounded text-forestaBlack font-bold cursor-default">*Negrita*</span> y <span class="bg-white px-1 border border-gray-300 rounded text-forestaBlack italic cursor-default">_Cursiva_</span></p></div><textarea id="mensajeCampana" rows="7" placeholder="¡Hola {{nombre}}! 👋..." class="w-full border-2 border-gray-200 focus:border-green-600 rounded p-4 text-sm font-medium text-forestaBlack outline-none"></textarea><button onclick="dispararCampana()" id="btnEnviar" class="mt-6 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-8 rounded shadow transition uppercase text-sm tracking-widest flex justify-center items-center gap-2">🚀 Enviar Campaña por WhatsApp</button><p id="textoCarga" class="text-sm text-green-600 font-bold mt-4 text-center hidden">⏳ Disparando mensajes...</p></div><div class="bg-gray-100 rounded-xl p-6 flex flex-col items-center justify-center border-4 border-dashed border-gray-200"><img src="/logo-vector-forestadent.webp" class="h-10 mb-4 opacity-50"><div class="bg-white p-4 rounded-xl shadow-sm w-full max-w-sm relative"><p class="text-xs text-gray-400 font-bold mb-2 border-b border-gray-100 pb-2">Así lo verá el Doctor en su celular:</p><p id="vistaPrevia" class="text-sm text-gray-800 whitespace-pre-wrap font-medium">Empieza a escribir tu mensaje...</p></div></div></div></div><script>document.getElementById('mensajeCampana').addEventListener('input', function(e) { let texto = e.target.value || 'Empieza a escribir tu mensaje...'; texto = texto.replace(/{{nombre}}/gi, 'Dr. Juan Pérez'); texto = texto.replace(/</g, "&lt;").replace(/>/g, "&gt;"); texto = texto.replace(/\\*(.*?)\\*/g, '<strong>$1</strong>'); texto = texto.replace(/_(.*?)_/g, '<em>$1</em>'); texto = texto.replace(/~(.*?)~/g, '<del>$1</del>'); document.getElementById('vistaPrevia').innerHTML = texto; }); function mostrarOpcionFiltro() { const filtro = document.getElementById('tipoFiltro').value; document.getElementById('cajaValorEstablecimiento').classList.add('hidden'); document.getElementById('cajaValorEtiqueta').classList.add('hidden'); document.getElementById('cajaValorManual').classList.add('hidden'); if (filtro === 'establecimiento') document.getElementById('cajaValorEstablecimiento').classList.remove('hidden'); if (filtro === 'etiqueta') document.getElementById('cajaValorEtiqueta').classList.remove('hidden'); if (filtro === 'manual') document.getElementById('cajaValorManual').classList.remove('hidden'); } async function dispararCampana() { const mensaje = document.getElementById('mensajeCampana').value; const filtro = document.getElementById('tipoFiltro').value; let valorFiltro = ''; let telefonosManuales = []; if (filtro === 'establecimiento') valorFiltro = document.getElementById('valorEstablecimiento').value; if (filtro === 'etiqueta') valorFiltro = document.getElementById('valorEtiqueta').value; if (filtro === 'manual') { const checkboxes = document.querySelectorAll('.checkbox-manual:checked'); checkboxes.forEach(cb => telefonosManuales.push(cb.value)); if (telefonosManuales.length === 0) return alert("Selecciona al menos un doctor."); } if (!mensaje.trim()) return alert("El mensaje está vacío."); if (!confirm('🚨 ATENCIÓN: Estás a punto de enviar un mensaje oficial por WhatsApp. ¿Deseas proceder?')) return; document.getElementById('btnEnviar').classList.add('hidden'); document.getElementById('textoCarga').classList.remove('hidden'); try { const response = await fetch('/admin/broadcast/enviar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mensaje, filtro, valorFiltro, telefonosManuales }) }); const result = await response.json(); if (result.success) { alert('✅ ¡Campaña disparada con éxito!'); window.location.reload(); } else { alert('Error enviando la campaña.'); } } catch (error) { console.error(error); alert('Error de conexión.'); } finally { document.getElementById('btnEnviar').classList.remove('hidden'); document.getElementById('textoCarga').classList.add('hidden'); } }</script></body></html>`;
-        res.send(html);
-    } catch (error) { res.status(500).send("Error."); }
-});
-
-app.post('/admin/broadcast/enviar', async (req, res) => {
-    try {
-        const { mensaje, filtro, valorFiltro, telefonosManuales } = req.body;
-        let query = {};
-        if (filtro === 'establecimiento' && valorFiltro) { query = { tipo_establecimiento: valorFiltro }; } 
-        else if (filtro === 'etiqueta' && valorFiltro) { query = { etiquetas: { $regex: valorFiltro, $options: 'i' } }; } 
-        else if (filtro === 'manual' && telefonosManuales && telefonosManuales.length > 0) { query = { telefono: { $in: telefonosManuales } }; }
-        
-        const destinatarios = await Usuario.find(query);
-        for (const dest of destinatarios) {
-            let mensajePersonalizado = mensaje.replace(/{{nombre}}/gi, dest.nombre_whatsapp);
-            
-            // 🚨 1. LA HUELLA EN EL CRM: Escribir en las notas que se envió esta campaña
-            const nuevaNota = dest.notas + `\n[📢 Campaña enviada el ${new Date().toLocaleDateString('es-EC')}]: ` + mensajePersonalizado.substring(0, 30) + '...';
-            await Usuario.findByIdAndUpdate(dest._id, { notas: nuevaNota.trim() });
-
-            await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', to: dest.telefono, type: 'text', text: { body: mensajePersonalizado } }) });
-            await new Promise(r => setTimeout(r, 500));
-        }
-        res.status(200).json({ success: true, enviados: destinatarios.length });
-    } catch (error) { res.status(500).json({ success: false }); }
-});
-
 app.post('/admin/catalogo/editar', async (req, res) => { try { await Producto.findByIdAndUpdate(req.body.id, { precio: req.body.precio }); res.status(200).json({ success: true }); } catch (error) { res.status(500).json({ success: false }); } });
 app.post('/admin/catalogo/agregar', async (req, res) => { try { await new Producto(req.body).save(); res.status(200).json({ success: true }); } catch (error) { res.status(500).json({ success: false }); } });
 app.post('/admin/catalogo/eliminar', async (req, res) => { try { await Producto.findByIdAndDelete(req.body.id); res.status(200).json({ success: true }); } catch (error) { res.status(500).json({ success: false }); } });
@@ -308,14 +317,8 @@ app.post('/webhook', async (req, res) => {
                     await usuario.save();
                     mensaje_respuesta = `¡Hola ${nombre_cliente}! Bienvenido a Forestadent Ecuador.\n\n` + texto_menu;
                 } else {
-                    // 🚨 2. EL GATILLO DE VENTA (INFO)
                     if (msg_body.toLowerCase() === 'info') {
-                        const nuevaSolicitud = new Solicitud({ 
-                            telefono_cliente: from, 
-                            nombre_cliente: nombre_cliente, 
-                            tipo_solicitud: 'contacto', 
-                            contenido_texto: '🎯 [LEAD DE CAMPAÑA] El doctor está muy interesado en la última promoción/broadcast enviado. Requiere contacto inmediato.' 
-                        });
+                        const nuevaSolicitud = new Solicitud({ telefono_cliente: from, nombre_cliente: nombre_cliente, tipo_solicitud: 'contacto', contenido_texto: '🎯 [LEAD DE CAMPAÑA] El doctor está muy interesado en la última promoción/broadcast enviado. Requiere contacto inmediato.' });
                         await nuevaSolicitud.save();
                         mensaje_respuesta = `✅ ¡Excelente decisión!\n\nAcabo de notificar a Néstor y a nuestro equipo comercial para que te contacten de inmediato y apliquen tu beneficio exclusivo.\n\n_(Escribe *Menu* para volver)_`;
                     }
@@ -339,14 +342,10 @@ app.post('/webhook', async (req, res) => {
                         await enviarMensajeInmediato(from, "⏳ *Calculando proforma...*\nEstoy revisando el inventario y generando tu documento oficial. Dame unos segunditos por favor. 🧮");
                         const catalogoCompleto = await Producto.find().lean();
                         const textoCotizacionIA = await generarCotizacionConIA(msg_body, catalogoCompleto);
-                        
                         const nuevaSolicitud = new Solicitud({ telefono_cliente: from, nombre_cliente: nombre_cliente, tipo_solicitud: 'cotizacion', contenido_texto: textoCotizacionIA, estado_atencion: 'cotizado' });
                         await nuevaSolicitud.save();
-
-                        // 🚨 DOMINIO DINÁMICO (Adiós al error de ting-col)
                         const url_host = req.get('host');
                         const enlaceProforma = `https://${url_host}/proforma/${nuevaSolicitud._id}`;
-                        
                         mensaje_respuesta = `✅ Listo ${nombre_cliente}, he calculado los valores exactos.\n\n📄 *Puedes ver y descargar tu Proforma Oficial aquí:*\n👉 ${enlaceProforma}\n\n_¿Deseas convertir esta cotización en un pedido formal?_ Responde *SI* para confirmar, o escribe *Menu* para regresar.`;
                         usuario.estado_conversacion = 'decidiendo_cotizacion'; 
                         await usuario.save();
