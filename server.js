@@ -52,19 +52,12 @@ const productosIniciales = [
     { codigo: "202-3843", nombre: "Arco acero recto inferior .017x.025", categoria: "Arcos", precio: 1.00, empaque: "Paquete de 10 unidades" },
     { codigo: "202-3745", nombre: "Arco acero recto superior .018x.025", categoria: "Arcos", precio: 1.00, empaque: "Paquete de 10 unidades" },
     { codigo: "202-3845", nombre: "Arco acero recto inferior .018x.025", categoria: "Arcos", precio: 1.00, empaque: "Paquete de 10 unidades" },
-    { codigo: "202-3748", nombre: "Arco acero recto superior .019x.025", categoria: "Arcos", precio: 1.00, empaque: "Paquete de 10 unidades" },
-    { codigo: "202-3848", nombre: "Arco acero recto inferior .019x.025", categoria: "Arcos", precio: 1.00, empaque: "Paquete de 10 unidades" },
     { codigo: "206-0840", nombre: "Arco Titanol budget superior .016", categoria: "Arcos", precio: 2.50, empaque: "Paquete de 10 unidades" },
     { codigo: "206-2035", nombre: "Arco Titanol budget superior .014x025", categoria: "Arcos", precio: 3.50, empaque: "Paquete de 10 unidades" },
     { codigo: "206-2135", nombre: "Arco Titanol budget inferior .014x.025", categoria: "Arcos", precio: 3.50, empaque: "Paquete de 10 unidades" },
     { codigo: "KIT-BQ", nombre: "Kit Autoligado BioQuick FACE", categoria: "Kits", precio: 199.00, empaque: "Kit Completo" },
     { codigo: "KIT-MS", nombre: "Kit Mini Sprint II FACE Evolution", categoria: "Kits", precio: 82.00, empaque: "Kit Completo" },
-    { codigo: "KIT-QK", nombre: "Kit QuickKlear FACE Evolution", categoria: "Kits", precio: 320.00, empaque: "Kit Completo" },
-    { codigo: "706-1006", nombre: "Easy Eco MOD MST .022", categoria: "Brackets", precio: 35.00, empaque: "Caso" },
-    { codigo: "729-0702", nombre: "Tubo FACE sup. 6 derecha", categoria: "Tubos", precio: 5.00, empaque: "Funda de 10 unidades" },
-    { codigo: "730-0702", nombre: "Tubo FACE sup. 6 izquierda", categoria: "Tubos", precio: 5.00, empaque: "Funda de 10 unidades" },
-    { codigo: "729-1702", nombre: "Tubo FACE inf. 6 izquierda", categoria: "Tubos", precio: 5.00, empaque: "Funda de 10 unidades" },
-    { codigo: "729-1702-D", nombre: "Tubo FACE inf. 6 derecha", categoria: "Tubos", precio: 5.00, empaque: "Funda de 10 unidades" }
+    { codigo: "KIT-QK", nombre: "Kit QuickKlear FACE Evolution", categoria: "Kits", precio: 320.00, empaque: "Kit Completo" }
 ];
 
 async function inicializarCatalogo() {
@@ -123,12 +116,16 @@ async function generarCotizacionConIA(texto_del_cliente, catalogo) {
     return "Lo siento, tuve un problema procesando el catálogo para tu cotización.";
 }
 
-// --- 4. PORTAL WEB DE ADMINISTRACIÓN (IDENTIDAD VISUAL FORESTADENT) ---
+// --- 4. PORTAL WEB DE ADMINISTRACIÓN (IDENTIDAD VISUAL + EXCEL) ---
 
 const htmlHead = `
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 🚨 LIBRERÍA PARA EXPORTAR A EXCEL -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
     <script>
         tailwind.config = { 
             theme: { 
@@ -160,6 +157,40 @@ const menuNavegacion = `
     </div>
 `;
 
+// SCRIPT UNIVERSAL PARA EXPORTAR A EXCEL
+const scriptExportarExcel = `
+<script>
+    function exportarExcel(nombreArchivo) {
+        // Clonamos la tabla para no afectar la vista del usuario
+        let tableOriginal = document.querySelector("table");
+        let tableCopia = document.createElement("table");
+        
+        let rows = tableOriginal.querySelectorAll("tr");
+        rows.forEach(row => {
+            // Solo copiamos las filas que están visibles (respeta el filtro)
+            if(row.style.display !== 'none') {
+                let newRow = row.cloneNode(true);
+                // Eliminamos la última columna (que siempre es "Acción / Botones")
+                if(newRow.children.length > 0) {
+                    newRow.removeChild(newRow.lastElementChild);
+                }
+                // Si hay selects o inputs en la fila, copiamos su valor como texto
+                let inputs = newRow.querySelectorAll("input, select, textarea");
+                inputs.forEach(input => {
+                    let textNode = document.createTextNode(input.value || input.options?.[input.selectedIndex]?.text || '');
+                    input.parentNode.replaceChild(textNode, input);
+                });
+                tableCopia.appendChild(newRow);
+            }
+        });
+        
+        // Usamos SheetJS para convertir y descargar
+        let wb = XLSX.utils.table_to_book(tableCopia, {sheet: "Reporte"});
+        XLSX.writeFile(wb, nombreArchivo + ".xlsx");
+    }
+</script>
+`;
+
 // PANTALLA 1: PEDIDOS
 app.get('/admin', async (req, res) => {
     try {
@@ -167,22 +198,27 @@ app.get('/admin', async (req, res) => {
         let html = `<!DOCTYPE html><html lang="es"><head><title>Forestadent | Pedidos</title>${htmlHead}</head><body class="bg-gray-50 p-8 font-sans"><div class="max-w-7xl mx-auto">${menuNavegacion}
         
         <div class="bg-white p-4 rounded-xl shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center border border-gray-100">
-            <input type="text" id="buscador" onkeyup="filtrarTabla()" placeholder="🔍 Buscar por doctor o teléfono..." class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 text-sm font-medium w-full md:w-1/2 outline-none transition">
+            <input type="text" id="buscador" onkeyup="filtrarTabla()" placeholder="🔍 Buscar por doctor o teléfono..." class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 text-sm font-medium w-full md:w-2/5 outline-none transition">
             
-            <select id="filtroTipo" onchange="filtrarTabla()" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 text-sm font-bold text-forestaBlack outline-none cursor-pointer w-full md:w-1/4">
+            <select id="filtroTipo" onchange="filtrarTabla()" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 text-sm font-bold text-forestaBlack outline-none cursor-pointer w-full md:w-1/5">
                 <option value="todos">📋 Todos los Tipos</option>
                 <option value="pedido">📦 Solo Pedidos</option>
                 <option value="cotizacion">💬 Solo Cotizaciones</option>
                 <option value="contacto">👤 Solo Contactos</option>
             </select>
 
-            <select id="filtroEstado" onchange="filtrarTabla()" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 text-sm font-bold text-forestaBlack outline-none cursor-pointer w-full md:w-1/4">
+            <select id="filtroEstado" onchange="filtrarTabla()" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 text-sm font-bold text-forestaBlack outline-none cursor-pointer w-full md:w-1/5">
                 <option value="todos">🚦 Todos los Estados</option>
                 <option value="pendiente">🟡 Pendientes</option>
                 <option value="despachado">🟢 Despachados</option>
                 <option value="cotizado">💬 Cotizados</option>
                 <option value="recordatorio_enviado">🔔 Avisados</option>
             </select>
+
+            <!-- 🚨 BOTÓN DE DESCARGAR EXCEL -->
+            <button onclick="exportarExcel('Reporte_Pedidos_Forestadent')" class="bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded shadow font-bold transition uppercase text-sm tracking-wide w-full md:w-1/5">
+                📥 Excel
+            </button>
         </div>
 
         <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100"><table class="w-full text-left border-collapse"><thead><tr class="bg-forestaBlack text-white uppercase text-sm tracking-wider"><th class="p-5">Fecha</th><th class="p-5">Cliente</th><th class="p-5">Teléfono</th><th class="p-5">Detalle / Respuesta IA</th><th class="p-5 text-center">Estado</th><th class="p-5 text-center">Acción</th></tr></thead><tbody class="divide-y divide-gray-100">`;
@@ -233,43 +269,30 @@ app.get('/admin', async (req, res) => {
         });
 
         html += `</tbody></table></div></div>
+        ${scriptExportarExcel}
         <script>
             function filtrarTabla() {
                 let texto = document.getElementById('buscador').value.toLowerCase();
                 let tipo = document.getElementById('filtroTipo').value;
                 let estado = document.getElementById('filtroEstado').value;
                 let filas = document.querySelectorAll('.fila-dato');
-
                 filas.forEach(fila => {
                     let contenido = fila.innerText.toLowerCase();
                     let filaTipo = fila.getAttribute('data-tipo');
                     let filaEstado = fila.getAttribute('data-estado');
-
                     let coincideTexto = contenido.includes(texto);
                     let coincideTipo = (tipo === 'todos' || filaTipo === tipo);
                     let coincideEstado = (estado === 'todos' || filaEstado === estado);
-
-                    if (coincideTexto && coincideTipo && coincideEstado) {
-                        fila.style.display = '';
-                    } else {
-                        fila.style.display = 'none';
-                    }
+                    if (coincideTexto && coincideTipo && coincideEstado) { fila.style.display = ''; } else { fila.style.display = 'none'; }
                 });
             }
-
             async function actualizarEstado(idPedido, nuevoEstado) { 
                 if(!confirm('¿Confirmas que este pedido ya fue empacado y despachado?')) return; 
-                try { 
-                    const response = await fetch('/admin/estado', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idPedido, estado: nuevoEstado }) }); 
-                    if(response.ok) { window.location.reload(); } else { alert('Error al actualizar.'); } 
-                } catch (error) { console.error('Error:', error); } 
+                try { const response = await fetch('/admin/estado', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idPedido, estado: nuevoEstado }) }); if(response.ok) { window.location.reload(); } } catch (error) { console.error('Error:', error); } 
             }
             async function recordarCotizacion(idCotizacion, telefono) {
                 if(!confirm('¿Deseas enviar un recordatorio automático por WhatsApp a este doctor?')) return;
-                try {
-                    const response = await fetch('/admin/recordar-cotizacion', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idCotizacion, telefono: telefono }) });
-                    if(response.ok) { window.location.reload(); } else { alert('Error enviando recordatorio.'); }
-                } catch (error) { console.error('Error:', error); }
+                try { const response = await fetch('/admin/recordar-cotizacion', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idCotizacion, telefono: telefono }) }); if(response.ok) { window.location.reload(); } } catch (error) { console.error('Error:', error); }
             }
         </script></body></html>`;
         res.send(html);
@@ -293,119 +316,43 @@ app.get('/admin/clientes', async (req, res) => {
             return { ...cliente.toObject(), semaforo, semaforoColor, dias };
         }));
 
-        let html = `<!DOCTYPE html><html lang="es"><head><title>Forestadent | CRM</title>${htmlHead}</head><body class="bg-gray-50 p-8 font-sans"><div class="max-w-7xl mx-auto">${menuNavegacion}<div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100"><table class="w-full text-left border-collapse"><thead><tr class="bg-forestaBlack text-white uppercase text-sm tracking-wider"><th class="p-5">Actividad</th><th class="p-5">Cliente</th><th class="p-5">Lugar de Entrega</th><th class="p-5">Etiquetas Comerciales</th><th class="p-5">Notas Internas</th><th class="p-5 text-center">Acción</th></tr></thead><tbody class="divide-y divide-gray-100">`;
+        let html = `<!DOCTYPE html><html lang="es"><head><title>Forestadent | CRM</title>${htmlHead}</head><body class="bg-gray-50 p-8 font-sans"><div class="max-w-7xl mx-auto">${menuNavegacion}
+        
+        <div class="flex justify-end mb-4">
+             <!-- 🚨 BOTÓN DE DESCARGAR EXCEL (CRM) -->
+             <button onclick="exportarExcel('Reporte_CRM_Forestadent')" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded shadow font-bold transition uppercase text-sm tracking-wide">📥 Exportar Directorio a Excel</button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100"><table class="w-full text-left border-collapse"><thead><tr class="bg-forestaBlack text-white uppercase text-sm tracking-wider"><th class="p-5">Actividad</th><th class="p-5">Cliente</th><th class="p-5">Lugar de Entrega</th><th class="p-5">Etiquetas Comerciales</th><th class="p-5">Notas Internas</th><th class="p-5 text-center">Acción</th></tr></thead><tbody class="divide-y divide-gray-100">`;
+        
         clientesConSemaforo.forEach(cliente => { 
             let textoDias = cliente.dias === 999 ? 'Sin compras' : `Hace ${cliente.dias} días`;
             html += `<tr class="hover:bg-gray-50 transition"><td class="p-5 text-center"><span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest border ${cliente.semaforoColor} block mb-1">${cliente.semaforo}</span><span class="text-xs text-gray-500 font-medium">${textoDias}</span></td><td class="p-5 font-bold text-forestaBlack">${cliente.nombre_whatsapp}<br><span class="text-xs text-gray-500 font-medium font-normal">+${cliente.telefono}</span></td><td class="p-5"><select id="lugar_${cliente._id}" class="border-2 border-gray-200 focus:border-forestaGold rounded p-2 text-xs font-medium text-forestaBlack outline-none w-full"><option value="consultorio" ${cliente.tipo_establecimiento === 'consultorio' ? 'selected' : ''}>Consultorio</option><option value="clínica" ${cliente.tipo_establecimiento === 'clínica' ? 'selected' : ''}>Clínica</option><option value="centro médico" ${cliente.tipo_establecimiento === 'centro médico' ? 'selected' : ''}>Centro Médico</option><option value="universidad" ${cliente.tipo_establecimiento === 'universidad' ? 'selected' : ''}>Universidad</option></select></td><td class="p-5"><input type="text" id="etiq_${cliente._id}" value="${cliente.etiquetas || ''}" placeholder="Ej: VIP, Moroso, Acero" class="border-2 border-gray-200 focus:border-forestaGold rounded p-2 text-xs w-full text-forestaBlack outline-none"></td><td class="p-5"><textarea id="notas_${cliente._id}" placeholder="Notas del doctor..." class="border-2 border-gray-200 focus:border-forestaGold rounded p-2 text-xs w-full text-forestaBlack outline-none" rows="2">${cliente.notas || ''}</textarea></td><td class="p-5 text-center"><button onclick="guardarPerfil('${cliente._id}')" class="bg-forestaGold hover:bg-forestaGoldHover text-white text-xs font-bold px-4 py-2 rounded shadow uppercase tracking-wide transition">💾 Guardar</button></td></tr>`; 
         });
-        html += `</tbody></table></div></div><script>async function guardarPerfil(idCliente) { const nuevoLugar = document.getElementById('lugar_' + idCliente).value; const nuevasEtiq = document.getElementById('etiq_' + idCliente).value; const nuevasNotas = document.getElementById('notas_' + idCliente).value; try { const response = await fetch('/admin/clientes/actualizar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idCliente, tipo_establecimiento: nuevoLugar, etiquetas: nuevasEtiq, notas: nuevasNotas }) }); if(response.ok) { alert('Perfil de CRM guardado.'); } else { alert('Error.'); } } catch (error) { console.error('Error:', error); } }</script></body></html>`;
+        html += `</tbody></table></div></div>
+        ${scriptExportarExcel}
+        <script>async function guardarPerfil(idCliente) { const nuevoLugar = document.getElementById('lugar_' + idCliente).value; const nuevasEtiq = document.getElementById('etiq_' + idCliente).value; const nuevasNotas = document.getElementById('notas_' + idCliente).value; try { const response = await fetch('/admin/clientes/actualizar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idCliente, tipo_establecimiento: nuevoLugar, etiquetas: nuevasEtiq, notas: nuevasNotas }) }); if(response.ok) { alert('Perfil de CRM guardado.'); } else { alert('Error.'); } } catch (error) { console.error('Error:', error); } }</script></body></html>`;
         res.send(html);
     } catch (error) { res.status(500).send('Error cargando CRM.'); }
 });
 
-// PANTALLA 3: CATÁLOGO (CON EDICIÓN DIRECTA)
+// PANTALLA 3: CATÁLOGO
 app.get('/admin/catalogo', async (req, res) => {
     try {
         const productos = await Producto.find().sort({ categoria: 1, nombre: 1 });
-        let html = `<!DOCTYPE html><html lang="es"><head><title>Forestadent | Catálogo</title>${htmlHead}</head><body class="bg-gray-50 p-8 font-sans"><div class="max-w-7xl mx-auto">${menuNavegacion}
-        
-        <div class="bg-white p-8 rounded-xl shadow-lg mb-8 border-l-8 border-forestaGold">
-            <h2 class="text-xl font-extrabold text-forestaBlack mb-6 uppercase tracking-wide">➕ Agregar Nuevo Producto</h2>
-            <div class="grid grid-cols-1 md:grid-cols-6 gap-5">
-                <input type="text" id="nuevo_codigo" placeholder="SKU / Código" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none">
-                <input type="text" id="nuevo_nombre" placeholder="Nombre del Producto" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none md:col-span-2">
-                <input type="text" id="nueva_categoria" placeholder="Categoría" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none">
-                <input type="text" id="nuevo_empaque" placeholder="Empaque (Ej: Paquete de 10 unidades)" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none">
-                <input type="number" step="0.01" id="nuevo_precio" placeholder="Precio ($)" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none">
-            </div>
-            <button onclick="agregarProducto()" class="mt-6 bg-forestaBlack hover:bg-gray-800 text-white font-bold py-3 px-8 rounded shadow transition uppercase text-sm tracking-widest">Guardar en Catálogo</button>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100"><table class="w-full text-left border-collapse"><thead><tr class="bg-forestaBlack text-white uppercase text-sm tracking-wider"><th class="p-5">SKU</th><th class="p-5">Nombre del Producto</th><th class="p-5">Empaque</th><th class="p-5">Categoría</th><th class="p-5 text-right w-32">Precio ($)</th><th class="p-5 text-center">Acción</th></tr></thead><tbody class="divide-y divide-gray-100">`;
-        
-        productos.forEach(prod => { 
-            html += `<tr class="hover:bg-gray-50 transition">
-                <td class="p-5 text-sm font-bold text-gray-500">${prod.codigo}</td>
-                <td class="p-5 font-bold text-forestaBlack">${prod.nombre}</td>
-                <td class="p-5 text-sm font-medium text-gray-500">${prod.empaque}</td>
-                <td class="p-5 text-sm font-medium text-gray-500">${prod.categoria}</td>
-                <td class="p-5 text-right">
-                    <input type="number" step="0.01" id="precio_${prod._id}" value="${prod.precio.toFixed(2)}" class="border border-gray-300 focus:border-forestaGold rounded p-1 w-20 text-right font-bold text-forestaGold outline-none">
-                </td>
-                <td class="p-5 text-center space-x-2">
-                    <button onclick="editarPrecio('${prod._id}')" class="bg-forestaGold hover:bg-forestaGoldHover text-white text-xs font-bold px-3 py-2 rounded transition uppercase tracking-wide">✏️ Editar</button>
-                    <button onclick="eliminarProducto('${prod._id}')" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold px-3 py-2 rounded transition uppercase tracking-wide">❌</button>
-                </td>
-            </tr>`; 
-        });
-        
-        html += `</tbody></table></div></div>
-        <script>
-            async function agregarProducto() { 
-                const codigo = document.getElementById('nuevo_codigo').value; 
-                const nombre = document.getElementById('nuevo_nombre').value; 
-                const categoria = document.getElementById('nueva_categoria').value; 
-                const empaque = document.getElementById('nuevo_empaque').value; 
-                const precio = document.getElementById('nuevo_precio').value; 
-                if(!codigo || !nombre || !precio) return alert("Llena código, nombre y precio."); 
-                try { 
-                    const response = await fetch('/admin/catalogo/agregar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo, nombre, categoria, precio: parseFloat(precio), empaque: empaque || "Unidad" }) }); 
-                    if(response.ok) { window.location.reload(); } else { alert('Error.'); } 
-                } catch (error) { console.error('Error:', error); } 
-            } 
-            
-            // NUEVA FUNCIÓN: EDITAR PRECIO DIRECTO
-            async function editarPrecio(idProducto) {
-                const nuevoPrecio = document.getElementById('precio_' + idProducto).value;
-                try {
-                    const response = await fetch('/admin/catalogo/editar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idProducto, precio: parseFloat(nuevoPrecio) }) });
-                    if(response.ok) { alert('Precio actualizado con éxito.'); } else { alert('Error actualizando precio.'); }
-                } catch (error) { console.error('Error:', error); }
-            }
-
-            async function eliminarProducto(idProducto) { 
-                if(!confirm("¿Seguro que deseas borrar este producto permanentemente?")) return; 
-                try { 
-                    const response = await fetch('/admin/catalogo/eliminar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idProducto }) }); 
-                    if(response.ok) { window.location.reload(); } else { alert('Error.'); } 
-                } catch (error) { console.error('Error:', error); } 
-            }
-        </script></body></html>`;
+        let html = `<!DOCTYPE html><html lang="es"><head><title>Forestadent | Catálogo</title>${htmlHead}</head><body class="bg-gray-50 p-8 font-sans"><div class="max-w-7xl mx-auto">${menuNavegacion}<div class="bg-white p-8 rounded-xl shadow-lg mb-8 border-l-8 border-forestaGold"><h2 class="text-xl font-extrabold text-forestaBlack mb-6 uppercase tracking-wide">➕ Agregar Nuevo Producto</h2><div class="grid grid-cols-1 md:grid-cols-6 gap-5"><input type="text" id="nuevo_codigo" placeholder="SKU / Código" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none"><input type="text" id="nuevo_nombre" placeholder="Nombre del Producto" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none md:col-span-2"><input type="text" id="nueva_categoria" placeholder="Categoría" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none"><input type="text" id="nuevo_empaque" placeholder="Empaque (Ej: Paquete de 10 unidades)" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none"><input type="number" step="0.01" id="nuevo_precio" placeholder="Precio ($)" class="border-2 border-gray-200 focus:border-forestaGold rounded p-3 font-medium text-forestaBlack outline-none"></div><button onclick="agregarProducto()" class="mt-6 bg-forestaBlack hover:bg-gray-800 text-white font-bold py-3 px-8 rounded shadow transition uppercase text-sm tracking-widest">Guardar en Catálogo</button></div><div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100"><table class="w-full text-left border-collapse"><thead><tr class="bg-forestaBlack text-white uppercase text-sm tracking-wider"><th class="p-5">SKU</th><th class="p-5">Nombre del Producto</th><th class="p-5">Empaque</th><th class="p-5">Categoría</th><th class="p-5 text-right w-32">Precio ($)</th><th class="p-5 text-center">Acción</th></tr></thead><tbody class="divide-y divide-gray-100">`;
+        productos.forEach(prod => { html += `<tr class="hover:bg-gray-50 transition"><td class="p-5 text-sm font-bold text-gray-500">${prod.codigo}</td><td class="p-5 font-bold text-forestaBlack">${prod.nombre}</td><td class="p-5 text-sm font-medium text-gray-500">${prod.empaque}</td><td class="p-5 text-sm font-medium text-gray-500">${prod.categoria}</td><td class="p-5 text-right"><input type="number" step="0.01" id="precio_${prod._id}" value="${prod.precio.toFixed(2)}" class="border border-gray-300 focus:border-forestaGold rounded p-1 w-20 text-right font-bold text-forestaGold outline-none"></td><td class="p-5 text-center space-x-2"><button onclick="editarPrecio('${prod._id}')" class="bg-forestaGold hover:bg-forestaGoldHover text-white text-xs font-bold px-3 py-2 rounded transition uppercase tracking-wide">✏️ Editar</button><button onclick="eliminarProducto('${prod._id}')" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold px-3 py-2 rounded transition uppercase tracking-wide">❌</button></td></tr>`; });
+        html += `</tbody></table></div></div><script>async function agregarProducto() { const codigo = document.getElementById('nuevo_codigo').value; const nombre = document.getElementById('nuevo_nombre').value; const categoria = document.getElementById('nueva_categoria').value; const empaque = document.getElementById('nuevo_empaque').value; const precio = document.getElementById('nuevo_precio').value; if(!codigo || !nombre || !precio) return alert("Llena código, nombre y precio."); try { const response = await fetch('/admin/catalogo/agregar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo, nombre, categoria, precio: parseFloat(precio), empaque: empaque || "Unidad" }) }); if(response.ok) { window.location.reload(); } else { alert('Error.'); } } catch (error) { console.error('Error:', error); } } async function editarPrecio(idProducto) { const nuevoPrecio = document.getElementById('precio_' + idProducto).value; try { const response = await fetch('/admin/catalogo/editar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idProducto, precio: parseFloat(nuevoPrecio) }) }); if(response.ok) { alert('Precio actualizado.'); } else { alert('Error actualizando precio.'); } } catch (error) { console.error('Error:', error); } } async function eliminarProducto(idProducto) { if(!confirm("¿Borrar permanentemente?")) return; try { const response = await fetch('/admin/catalogo/eliminar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idProducto }) }); if(response.ok) { window.location.reload(); } else { alert('Error.'); } } catch (error) { console.error('Error:', error); } }</script></body></html>`;
         res.send(html);
     } catch (error) { res.status(500).send('Error cargando Catálogo.'); }
 });
 
-// NUEVA RUTA PARA GUARDAR LA EDICIÓN DEL PRECIO
-app.post('/admin/catalogo/editar', async (req, res) => { 
-    try { await Producto.findByIdAndUpdate(req.body.id, { precio: req.body.precio }); res.status(200).json({ success: true }); } 
-    catch (error) { res.status(500).json({ success: false }); } 
-});
-
+app.post('/admin/catalogo/editar', async (req, res) => { try { await Producto.findByIdAndUpdate(req.body.id, { precio: req.body.precio }); res.status(200).json({ success: true }); } catch (error) { res.status(500).json({ success: false }); } });
 app.post('/admin/catalogo/agregar', async (req, res) => { try { await new Producto(req.body).save(); res.status(200).json({ success: true }); } catch (error) { res.status(500).json({ success: false }); } });
 app.post('/admin/catalogo/eliminar', async (req, res) => { try { await Producto.findByIdAndDelete(req.body.id); res.status(200).json({ success: true }); } catch (error) { res.status(500).json({ success: false }); } });
 app.post('/admin/clientes/actualizar', async (req, res) => { try { await Usuario.findByIdAndUpdate(req.body.id, { tipo_establecimiento: req.body.tipo_establecimiento, etiquetas: req.body.etiquetas, notas: req.body.notas }); res.status(200).json({ success: true }); } catch (error) { res.status(500).json({ success: false }); } });
-app.post('/admin/recordar-cotizacion', async (req, res) => {
-    try {
-        const { id, telefono } = req.body;
-        await Solicitud.findByIdAndUpdate(id, { estado_atencion: 'recordatorio_enviado' });
-        const mensaje_recordatorio = `👋 Hola Doctor/a, espero te encuentres excelente hoy.\n\nTe escribo rápidamente para saber si pudiste revisar la cotización que te envié. ¿Tienes alguna duda o te gustaría que procedamos a armar el pedido? 📦🦷`;
-        await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', to: telefono, type: 'text', text: { body: mensaje_recordatorio } }) });
-        res.status(200).json({ success: true });
-    } catch (error) { res.status(500).json({ success: false }); }
-});
-app.post('/admin/estado', async (req, res) => {
-    try {
-        const { id, estado } = req.body;
-        const pedidoActualizado = await Solicitud.findByIdAndUpdate(id, { estado_atencion: estado }, { new: true });
-        if (estado === 'despachado' && pedidoActualizado) {
-            const perfilCliente = await Usuario.findOne({ telefono: pedidoActualizado.telefono_cliente });
-            const lugarDeEntrega = perfilCliente ? perfilCliente.tipo_establecimiento : 'consultorio';
-            const mensaje_notificacion = `🚚 *¡Buenas noticias, ${pedidoActualizado.nombre_cliente}!*\n\nTu pedido ha sido empacado y acaba de ser *DESPACHADO* a tu ${lugarDeEntrega}.\n\nGracias por confiar en Forestadent Ecuador. 🦷`;
-            await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', to: pedidoActualizado.telefono_cliente, type: 'text', text: { body: mensaje_notificacion } }) });
-        }
-        res.status(200).json({ success: true });
-    } catch (error) { res.status(500).json({ success: false }); }
-});
+app.post('/admin/recordar-cotizacion', async (req, res) => { try { const { id, telefono } = req.body; await Solicitud.findByIdAndUpdate(id, { estado_atencion: 'recordatorio_enviado' }); const mensaje_recordatorio = `👋 Hola Doctor/a, espero te encuentres excelente hoy.\n\nTe escribo rápidamente para saber si pudiste revisar la cotización que te envié. ¿Tienes alguna duda o te gustaría que procedamos a armar el pedido? 📦🦷`; await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', to: telefono, type: 'text', text: { body: mensaje_recordatorio } }) }); res.status(200).json({ success: true }); } catch (error) { res.status(500).json({ success: false }); } });
+app.post('/admin/estado', async (req, res) => { try { const { id, estado } = req.body; const pedidoActualizado = await Solicitud.findByIdAndUpdate(id, { estado_atencion: estado }, { new: true }); if (estado === 'despachado' && pedidoActualizado) { const perfilCliente = await Usuario.findOne({ telefono: pedidoActualizado.telefono_cliente }); const lugarDeEntrega = perfilCliente ? perfilCliente.tipo_establecimiento : 'consultorio'; const mensaje_notificacion = `🚚 *¡Buenas noticias, ${pedidoActualizado.nombre_cliente}!*\n\nTu pedido ha sido empacado y acaba de ser *DESPACHADO* a tu ${lugarDeEntrega}.\n\nGracias por confiar en Forestadent Ecuador. 🦷`; await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', to: pedidoActualizado.telefono_cliente, type: 'text', text: { body: mensaje_notificacion } }) }); } res.status(200).json({ success: true }); } catch (error) { res.status(500).json({ success: false }); } });
 
 // --- 5. RUTAS DE WHATSAPP (BOT) ---
 app.get('/activar-meta', async (req, res) => { try { const response = await fetch(`https://graph.facebook.com/v25.0/2048355149178743/subscribed_apps`, { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' }}); res.status(200).json({ resultado: await response.json() }); } catch (error) { res.status(500).json({ error: error.message }); } });
