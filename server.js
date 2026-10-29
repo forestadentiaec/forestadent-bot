@@ -137,8 +137,7 @@ const menuNavegacion = `
 
 const scriptExportarExcel = `<script>function exportarExcel(nombreArchivo) { let tableOriginal = document.querySelector("table"); let tableCopia = document.createElement("table"); let rows = tableOriginal.querySelectorAll("tr"); rows.forEach(row => { if(row.style.display !== 'none') { let newRow = row.cloneNode(true); if(newRow.children.length > 0) { newRow.removeChild(newRow.lastElementChild); } let inputs = newRow.querySelectorAll("input, select, textarea"); inputs.forEach(input => { let textNode = document.createTextNode(input.value || input.options?.[input.selectedIndex]?.text || ''); input.parentNode.replaceChild(textNode, input); }); tableCopia.appendChild(newRow); } }); let wb = XLSX.utils.table_to_book(tableCopia, {sheet: "Reporte"}); XLSX.writeFile(wb, nombreArchivo + ".xlsx"); }</script>`;
 
-
-// 🚨 NUEVA PANTALLA: BROADCAST (DIFUSIÓN MASIVA CON MODO MANUAL)
+// 🚨 PANTALLA BROADCAST CON GUÍA VISUAL Y RENDER DE NEGRITAS
 app.get('/admin/broadcast', async (req, res) => {
     try {
         const clientes = await Usuario.find().sort({ nombre_whatsapp: 1 });
@@ -158,7 +157,6 @@ app.get('/admin/broadcast', async (req, res) => {
             <p class="text-gray-500 font-medium mb-8">Envía promociones o avisos a tus doctores directamente por WhatsApp.</p>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <!-- Columna Izquierda: Configuración -->
                 <div>
                     <label class="block text-sm font-bold text-forestaBlack uppercase mb-2">1. Selecciona tu público objetivo</label>
                     <select id="tipoFiltro" onchange="mostrarOpcionFiltro()" class="w-full border-2 border-gray-200 focus:border-green-600 rounded p-4 text-sm font-bold text-forestaBlack outline-none mb-4 cursor-pointer">
@@ -181,7 +179,6 @@ app.get('/admin/broadcast', async (req, res) => {
                         <input type="text" id="valorEtiqueta" placeholder="Escribe la etiqueta exacta (Ej: VIP, Acero, Moroso)" class="w-full border-2 border-gray-200 focus:border-green-600 rounded p-4 text-sm font-medium text-forestaBlack outline-none">
                     </div>
 
-                    <!-- NUEVA CAJA PARA SELECCIÓN MANUAL -->
                     <div id="cajaValorManual" class="hidden mb-4 transition-all">
                         <div class="border-2 border-gray-200 rounded p-4 max-h-60 overflow-y-auto bg-gray-50">
                             <p class="text-xs font-bold text-gray-500 uppercase mb-3">Marca los doctores específicos:</p>
@@ -189,8 +186,16 @@ app.get('/admin/broadcast', async (req, res) => {
                         </div>
                     </div>
 
-                    <label class="block text-sm font-bold text-forestaBlack uppercase mb-2 mt-6">2. Escribe tu mensaje corporativo</label>
-                    <textarea id="mensajeCampana" rows="6" placeholder="¡Hola! Este mes en Forestadent Ecuador tenemos 20% de descuento en arcos..." class="w-full border-2 border-gray-200 focus:border-green-600 rounded p-4 text-sm font-medium text-forestaBlack outline-none"></textarea>
+                    <label class="block text-sm font-bold text-forestaBlack uppercase mb-0 mt-6">2. Escribe tu mensaje corporativo</label>
+                    
+                    <!-- 🚨 LA NUEVA BARRA DE HERRAMIENTAS VISUALES -->
+                    <div class="flex flex-wrap gap-x-4 gap-y-2 mb-2 mt-2 bg-gray-50 p-3 rounded border border-gray-200">
+                        <p class="text-xs text-gray-600 font-bold">🪄 Personalizar: <span class="bg-white px-1 border border-gray-300 rounded text-forestaBlack cursor-default">{{nombre}}</span></p>
+                        <p class="text-xs text-gray-600 font-bold">✒️ Formato WhatsApp: <span class="bg-white px-1 border border-gray-300 rounded text-forestaBlack font-bold cursor-default">*Negrita*</span> y <span class="bg-white px-1 border border-gray-300 rounded text-forestaBlack italic cursor-default">_Cursiva_</span></p>
+                        <p class="text-xs text-gray-600 font-bold">😎 Emojis: <span class="text-forestaBlack font-normal">¡Úsalos desde tu teclado! 📦 🦷 🚀</span></p>
+                    </div>
+                    
+                    <textarea id="mensajeCampana" rows="7" placeholder="¡Hola {{nombre}}! 👋&#10;&#10;Este mes en *Forestadent Ecuador* tenemos _20% de descuento_ en todos los arcos.&#10;&#10;📦 Envío gratis en Quito." class="w-full border-2 border-gray-200 focus:border-green-600 rounded p-4 text-sm font-medium text-forestaBlack outline-none"></textarea>
                     
                     <button onclick="dispararCampana()" id="btnEnviar" class="mt-6 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-8 rounded shadow transition uppercase text-sm tracking-widest flex justify-center items-center gap-2">
                         🚀 Enviar Campaña por WhatsApp
@@ -198,11 +203,11 @@ app.get('/admin/broadcast', async (req, res) => {
                     <p id="textoCarga" class="text-sm text-green-600 font-bold mt-4 text-center hidden">⏳ Disparando mensajes... (Esto puede tardar unos segundos, no cierres la página).</p>
                 </div>
                 
-                <!-- Columna Derecha: Previsualización -->
                 <div class="bg-gray-100 rounded-xl p-6 flex flex-col items-center justify-center border-4 border-dashed border-gray-200">
                     <img src="/logo-vector-forestadent.webp" class="h-10 mb-4 opacity-50">
                     <div class="bg-white p-4 rounded-xl shadow-sm w-full max-w-sm relative">
-                        <p class="text-xs text-gray-400 font-bold mb-2">Así lo verá el Doctor en su celular:</p>
+                        <p class="text-xs text-gray-400 font-bold mb-2 border-b border-gray-100 pb-2">Así lo verá el Doctor en su celular:</p>
+                        <!-- 🚨 AQUÍ EL TEXTO SE RENDERIZA EN HTML -->
                         <p id="vistaPrevia" class="text-sm text-gray-800 whitespace-pre-wrap font-medium">Empieza a escribir tu mensaje...</p>
                     </div>
                 </div>
@@ -210,9 +215,26 @@ app.get('/admin/broadcast', async (req, res) => {
         </div>
         
         <script>
-            // Actualiza el teléfono de vista previa en tiempo real
+            // 🚨 EL RENDERIZADOR DE VISTA PREVIA (CONVIERTE MARKDOWN A HTML VISUAL)
             document.getElementById('mensajeCampana').addEventListener('input', function(e) {
-                document.getElementById('vistaPrevia').innerText = e.target.value || 'Empieza a escribir tu mensaje...';
+                let texto = e.target.value || 'Empieza a escribir tu mensaje...';
+                
+                // Simulación de la variable nombre
+                texto = texto.replace(/{{nombre}}/gi, 'Dr. Juan Pérez'); 
+                
+                // Escape simple de HTML para seguridad
+                texto = texto.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+                // Renderiza las Negritas de WhatsApp (*texto*)
+                texto = texto.replace(/\\*(.*?)\\*/g, '<strong>$1</strong>');
+                
+                // Renderiza las Cursivas de WhatsApp (_texto_)
+                texto = texto.replace(/_(.*?)_/g, '<em>$1</em>');
+                
+                // Renderiza el Tachado (~texto~)
+                texto = texto.replace(/~(.*?)~/g, '<del>$1</del>');
+
+                document.getElementById('vistaPrevia').innerHTML = texto;
             });
 
             function mostrarOpcionFiltro() {
@@ -220,7 +242,6 @@ app.get('/admin/broadcast', async (req, res) => {
                 document.getElementById('cajaValorEstablecimiento').classList.add('hidden');
                 document.getElementById('cajaValorEtiqueta').classList.add('hidden');
                 document.getElementById('cajaValorManual').classList.add('hidden');
-                
                 if (filtro === 'establecimiento') document.getElementById('cajaValorEstablecimiento').classList.remove('hidden');
                 if (filtro === 'etiqueta') document.getElementById('cajaValorEtiqueta').classList.remove('hidden');
                 if (filtro === 'manual') document.getElementById('cajaValorManual').classList.remove('hidden');
@@ -241,7 +262,6 @@ app.get('/admin/broadcast', async (req, res) => {
                 }
 
                 if (!mensaje.trim()) return alert("No puedes enviar un mensaje vacío.");
-                
                 if (!confirm('🚨 ATENCIÓN: Estás a punto de enviar un mensaje oficial por WhatsApp. ¿Deseas proceder?')) return;
 
                 document.getElementById('btnEnviar').classList.add('hidden');
@@ -257,12 +277,9 @@ app.get('/admin/broadcast', async (req, res) => {
                     if (result.success) {
                         alert('✅ ¡Campaña disparada con éxito a ' + result.enviados + ' clientes!');
                         window.location.reload();
-                    } else {
-                        alert('Error enviando la campaña. Revisa la consola.');
-                    }
+                    } else { alert('Error enviando la campaña. Revisa la consola.'); }
                 } catch (error) {
-                    console.error(error);
-                    alert('Error de conexión.');
+                    console.error(error); alert('Error de conexión.');
                 } finally {
                     document.getElementById('btnEnviar').classList.remove('hidden');
                     document.getElementById('textoCarga').classList.add('hidden');
@@ -271,12 +288,9 @@ app.get('/admin/broadcast', async (req, res) => {
         </script>
         </body></html>`;
         res.send(html);
-    } catch (error) {
-        res.status(500).send("Error cargando panel de Broadcast.");
-    }
+    } catch (error) { res.status(500).send("Error cargando panel de Broadcast."); }
 });
 
-// 🚨 LÓGICA DEL MOTOR DE BROADCAST ACTUALIZADO
 app.post('/admin/broadcast/enviar', async (req, res) => {
     try {
         const { mensaje, filtro, valorFiltro, telefonosManuales } = req.body;
@@ -285,28 +299,25 @@ app.post('/admin/broadcast/enviar', async (req, res) => {
         if (filtro === 'establecimiento' && valorFiltro) {
             query = { tipo_establecimiento: valorFiltro };
         } else if (filtro === 'etiqueta' && valorFiltro) {
-            query = { etiquetas: { $regex: valorFiltro, $options: 'i' } }; // Búsqueda insensible a mayúsculas
+            query = { etiquetas: { $regex: valorFiltro, $options: 'i' } };
         } else if (filtro === 'manual' && telefonosManuales && telefonosManuales.length > 0) {
-            query = { telefono: { $in: telefonosManuales } }; // Busca todos los teléfonos marcados
+            query = { telefono: { $in: telefonosManuales } };
         }
 
         const destinatarios = await Usuario.find(query);
 
-        // Bucle de envío masivo con sistema de anti-bloqueo (delay)
         for (const dest of destinatarios) {
+            let mensajePersonalizado = mensaje.replace(/{{nombre}}/gi, dest.nombre_whatsapp);
+
             await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, {
                 method: 'POST', headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messaging_product: 'whatsapp', to: dest.telefono, type: 'text', text: { body: mensaje } })
+                body: JSON.stringify({ messaging_product: 'whatsapp', to: dest.telefono, type: 'text', text: { body: mensajePersonalizado } })
             });
-            // Pausa táctica de 500ms para evitar spam
             await new Promise(r => setTimeout(r, 500));
         }
 
         res.status(200).json({ success: true, enviados: destinatarios.length });
-    } catch (error) {
-        console.error('Error en Campaña Masiva:', error);
-        res.status(500).json({ success: false });
-    }
+    } catch (error) { console.error('Error en Campaña:', error); res.status(500).json({ success: false }); }
 });
 
 
