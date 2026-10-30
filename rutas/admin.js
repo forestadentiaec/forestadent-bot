@@ -74,7 +74,7 @@ router.post('/admin/pago/aprobar', async (req, res) => {
     } catch (e) { res.json({ success: false }); }
 });
 
-// 4. INVENTARIO E IA (CON TUS MODELOS INYECTADOS EN LA CASCADA)
+// 4. INVENTARIO E IA CON EXPORTACIÓN A PDF
 router.get('/admin/inventario', async (req, res) => {
     try {
         const prod = await Producto.find().sort({ categoria: 1, nombre: 1 });
@@ -94,7 +94,16 @@ router.get('/admin/inventario', async (req, res) => {
                 <h2 class="text-2xl font-extrabold uppercase">📦 Asistente de Compras (IA)</h2>
                 <button onclick="analizarIA()" id="btnIA" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow">🧠 Analizar Stock con IA</button>
             </div>
-            <div id="respuestaIA" class="hidden bg-blue-50 p-6 rounded-xl border border-blue-200 mb-6 text-sm"></div>
+            
+            <div id="cajaResultadoIA" class="hidden mb-8">
+                <div id="pdfReporte" class="p-8 bg-white border border-gray-200 rounded-lg shadow-sm">
+                    <h3 class="text-xl font-extrabold mb-6 uppercase text-blue-900 border-b-2 border-blue-100 pb-4">📑 Reporte Ejecutivo de Abastecimiento</h3>
+                    <div id="textoReporte" class="text-sm text-gray-800" style="line-height: 1.6;"></div>
+                    <p class="text-xs text-gray-400 mt-8 pt-4 border-t border-gray-100 text-center font-bold">Generado por Inteligencia Artificial • Forestadent B2B Ecuador • ${new Date().toLocaleDateString('es-EC')}</p>
+                </div>
+                <button onclick="descargarPDF()" class="mt-4 bg-forestaBlack text-white font-bold py-3 px-6 rounded-lg shadow-lg w-full hover:bg-gray-800 transition">📥 Descargar Informe (PDF)</button>
+            </div>
+            
             <table class="w-full text-left">
                 <thead><tr class="bg-forestaBlack text-white text-xs uppercase"><th class="p-4">SKU & Nombre</th><th class="p-4">Stock Actual</th><th class="p-4">Seguridad</th><th class="p-4">Tránsito</th><th class="p-4">Acción</th></tr></thead>
                 <tbody>${filas}</tbody>
@@ -106,13 +115,23 @@ router.get('/admin/inventario', async (req, res) => {
                 location.reload();
             }
             async function analizarIA(){
-                document.getElementById('respuestaIA').classList.remove('hidden');
-                document.getElementById('respuestaIA').innerHTML = '<b>🧠 Analizando modelos lógicos...</b>';
+                const caja = document.getElementById('cajaResultadoIA');
+                const texto = document.getElementById('textoReporte');
+                caja.classList.remove('hidden');
+                texto.innerHTML = '<div class="text-center font-bold text-blue-600 my-8">🧠 Analizando modelos lógicos de inventario...</div>';
                 try {
                     const r = await fetch('/admin/inventario/analizar', {method:'POST'});
                     const d = await r.json();
-                    document.getElementById('respuestaIA').innerHTML = d.success ? d.analisis : '❌ Error evaluando stock. Revisa los logs de Render.';
-                } catch(e) { document.getElementById('respuestaIA').innerHTML = '❌ Error de red.'; }
+                    if(d.success) {
+                        texto.innerHTML = d.analisis;
+                    } else {
+                        texto.innerHTML = '<div class="text-red-600 font-bold">❌ Error evaluando stock. Revisa los logs de Render.</div>';
+                    }
+                } catch(e) { texto.innerHTML = '<div class="text-red-600 font-bold">❌ Error de conexión.</div>'; }
+            }
+            function descargarPDF() {
+                const elemento = document.getElementById('pdfReporte');
+                html2pdf().set({ margin: 15, filename: 'Reporte_Logistico_Forestadent.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(elemento).save();
             }
         </script></div></body></html>`);
     } catch (e) { res.status(500).send('Error'); }
@@ -127,23 +146,17 @@ router.post('/admin/inventario/analizar', async (req, res) => {
         const prod = await Producto.find();
         const inv = prod.map(p => `SKU: ${p.codigo} | Stock: ${p.stock_actual} | Mínimo: ${p.stock_seguridad} | Tránsito: ${p.lead_time_dias}días`).join('\n');
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const prompt = `Eres el Gerente Logístico de Forestadent. Analiza este stock y genera una orden de compra corporativa.\n${inv}`;
+        const prompt = `Eres el Gerente Logístico de Forestadent. Analiza este stock y genera un reporte corporativo claro indicando qué pedir a Casa Matriz.\n${inv}`;
         let result = null;
         
-        // 🚨 AQUÍ ESTÁN TUS MODELOS Y EL RESPALDO
         const modelos = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro'];
         
         for (const m of modelos) {
             try { 
                 const model = genAI.getGenerativeModel({ model: m }); 
                 result = await model.generateContent(prompt); 
-                if (result && result.response) {
-                    console.log(`✅ ¡Reporte generado con el modelo: ${m}!`);
-                    break; 
-                }
-            } catch (e) {
-                console.log(`⚠️ Modelo ${m} falló. Pasando al siguiente en la cascada...`);
-            }
+                if (result && result.response) break; 
+            } catch (e) {}
         }
         
         if (result) res.json({ success: true, analisis: result.response.text().replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') });
