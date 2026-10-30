@@ -74,7 +74,7 @@ router.post('/admin/pago/aprobar', async (req, res) => {
     } catch (e) { res.json({ success: false }); }
 });
 
-// 4. INVENTARIO E IA CON EXPORTACIÓN NATIVA
+// 4. INVENTARIO E IA CON EXPORTACIÓN NATIVA (INFALIBLE)
 router.get('/admin/inventario', async (req, res) => {
     try {
         const prod = await Producto.find().sort({ categoria: 1, nombre: 1 });
@@ -198,37 +198,124 @@ router.post('/admin/clientes/actualizar', async (req, res) => {
     try { await Usuario.findByIdAndUpdate(req.body.id, req.body); res.json({ success: true }); } catch (e) { res.json({ success: false }); }
 });
 
-// 6. GESTOR DE CAMPAÑAS Y BROADCAST
-router.get('/admin/broadcast', async (req, res) => {
-    try {
-        let html = `<!DOCTYPE html><html><head>${htmlHead}</head><body class="bg-gray-50 p-8"><div class="max-w-7xl mx-auto">${menuNavegacion}
+// 6. GESTOR DE CAMPAÑAS Y BROADCAST (VERSIÓN AVANZADA RESTAURADA)
+router.get('/admin/broadcast', async (req, res) => { 
+    try { 
+        const clientes = await Usuario.find().sort({ nombre_whatsapp: 1 }); 
+        const historialCampanas = await Campana.find().sort({ fecha_envio: -1 }); 
+        const tickets = await Ticket.find().sort({ fecha_emision: -1 }); 
+        
+        let listaCheckboxes = ''; 
+        clientes.forEach(c => { listaCheckboxes += `<label class="flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg cursor-pointer"><input type="checkbox" value="${c.telefono}" class="checkbox-manual w-5 h-5 text-green-600 rounded"><span class="text-sm font-bold text-forestaBlack">${c.nombre_whatsapp} <span class="text-gray-400 font-medium ml-1">(+${c.telefono})</span></span></label>`; }); 
+        
+        let filasHistorial = ''; 
+        historialCampanas.forEach(camp => { let fechaEvt = camp.fecha_evento ? new Date(camp.fecha_evento).toLocaleString('es-EC') : 'Sin fecha'; filasHistorial += `<tr class="border-b"><td class="p-4 text-xs font-medium text-gray-500">${fechaEvt}</td><td class="p-4 font-bold text-forestaBlack">${camp.nombre_campana}</td><td class="p-4 text-center font-bold">${camp.metricas_enviados}</td><td class="p-4 text-center font-bold text-blue-600 bg-blue-50">${camp.metricas_info}</td><td class="p-4 text-center font-bold text-yellow-600 bg-yellow-50">${camp.metricas_reservas}</td><td class="p-4 text-center font-bold text-green-600 bg-green-50">${camp.metricas_pagos}</td></tr>`; }); 
+        
+        let filasAsistencia = ''; 
+        tickets.forEach(t => { let estado = t.asistencia_confirmada ? '<span class="text-green-600 font-bold bg-green-100 px-3 py-1 rounded-full text-xs">🟢 Asistió</span>' : '<span class="text-red-500 font-bold bg-red-100 px-3 py-1 rounded-full text-xs">🔴 Ausente</span>'; filasAsistencia += `<tr class="border-b hover:bg-gray-50"><td class="p-4 text-xs font-medium text-gray-500">${new Date(t.fecha_emision).toLocaleDateString('es-EC')}</td><td class="p-4 font-bold text-forestaBlack">${t.nombre_cliente}</td><td class="p-4 font-bold text-gray-700">${t.nombre_evento}</td><td class="p-4 text-sm font-medium text-gray-500">${t.id_unico}</td><td class="p-4 text-center">${estado}</td></tr>`; }); 
+        
+        let html = `<!DOCTYPE html><html><head><title>Campañas</title>${htmlHead}</head><body class="bg-gray-50 p-8"><div class="max-w-7xl mx-auto">${menuNavegacion}
         <div class="bg-white p-8 rounded-xl shadow border-l-8 border-green-600 mb-8">
-            <h2 class="text-2xl font-extrabold mb-4 uppercase">📢 Lanzar Campaña</h2>
-            <input type="text" id="nCamp" placeholder="Nombre interno (Ej: Evento VIP)" class="w-full border p-3 font-bold mb-3">
-            <label class="block text-xs font-bold uppercase mb-1">Fecha del Evento:</label>
-            <input type="datetime-local" id="fCamp" class="w-full border p-3 mb-3 bg-gray-50">
-            <textarea id="mCamp" rows="4" placeholder="Escribe tu mensaje..." class="w-full border p-4 mb-4"></textarea>
-            <button onclick="enviar()" class="w-full bg-green-600 text-white font-bold py-4 rounded uppercase">🚀 Disparar a todos</button>
+            <h2 class="text-2xl font-extrabold mb-2 uppercase">📢 Gestor de Campañas</h2>
+            <div class="grid grid-cols-2 gap-8">
+                <div>
+                    <label class="block text-sm font-bold uppercase mb-2">1. Público</label>
+                    <select id="tipoFiltro" onchange="mostrarOpcionFiltro()" class="w-full border p-3 rounded mb-4 font-bold"><option value="todos">🌍 TODOS</option><option value="establecimiento">🏥 Por Establecimiento</option><option value="etiqueta">🏷️ Por Etiqueta</option><option value="manual">🎯 Manual</option></select>
+                    <div id="cajaValorEstablecimiento" class="hidden mb-4"><select id="valorEstablecimiento" class="w-full border p-3 rounded"><option value="consultorio">Consultorio</option><option value="clínica">Clínica</option></select></div>
+                    <div id="cajaValorEtiqueta" class="hidden mb-4"><input type="text" id="valorEtiqueta" placeholder="Ej: VIP" class="w-full border p-3 rounded"></div>
+                    <div id="cajaValorManual" class="hidden mb-4"><div class="border rounded p-4 max-h-60 overflow-y-auto">${listaCheckboxes}</div></div>
+                    
+                    <label class="block text-sm font-bold uppercase mb-2 mt-4">2. Estructura</label>
+                    <input type="text" id="nombreCampana" placeholder="Nombre interno" class="w-full border p-3 font-bold mb-3">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Fecha y Hora del Evento:</label>
+                    <input type="datetime-local" id="fechaEventoCampana" class="w-full border p-3 font-bold mb-3 bg-gray-50">
+                    <input type="text" id="linkCampana" placeholder="🔗 Enlace del PDF" class="w-full border p-3 mb-3">
+                    <textarea id="bancoCampana" rows="2" placeholder="🏦 Datos Bancarios" class="w-full border p-3 mb-3"></textarea>
+                    
+                    <label class="block text-sm font-bold uppercase mb-2">3. Mensaje</label>
+                    <textarea id="mensajeCampana" rows="5" placeholder="Escribe tu mensaje..." class="w-full border p-4 mb-4"></textarea>
+                    <button onclick="disparar()" id="btnEnviar" class="w-full bg-green-600 text-white font-bold py-4 rounded uppercase">🚀 Lanzar</button>
+                    <p id="textoCarga" class="text-green-600 font-bold mt-4 text-center hidden">⏳ Enviando...</p>
+                </div>
+                <div class="bg-gray-100 p-6 rounded-xl flex flex-col items-center">
+                    <p class="text-xs font-bold mb-4 uppercase">Vista Previa</p>
+                    <div class="bg-white p-5 rounded-xl shadow w-full"><p class="text-sm font-medium mb-4">🦷 ¡Hola! ✨</p><p id="vistaPrevia" class="text-sm font-bold">[Oferta]</p><p class="text-sm font-medium mt-4 italic">👉 Para más información responde INFO.</p></div>
+                </div>
+            </div>
         </div>
-        <script>async function enviar(){ await fetch('/admin/broadcast/enviar', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({nombre:document.getElementById('nCamp').value, fecha:document.getElementById('fCamp').value, mensaje:document.getElementById('mCamp').value})}); alert('Enviado'); location.reload();}</script>
-        </div></body></html>`;
-        res.send(html);
-    } catch(e) { res.status(500).send('Error'); }
+        
+        <div class="bg-white p-8 rounded-xl shadow mb-8">
+            <h2 class="text-xl font-extrabold mb-6 uppercase">📊 Historial</h2>
+            <table class="w-full text-left"><thead><tr class="bg-forestaBlack text-white text-xs uppercase"><th class="p-4">Fecha Evento</th><th class="p-4">Campaña</th><th class="p-4">Enviados</th><th class="p-4">INFO</th><th class="p-4">Reservas</th><th class="p-4">Pagos</th></tr></thead><tbody>${filasHistorial||'<tr><td colspan="6" class="text-center p-4">Nada aún.</td></tr>'}</tbody></table>
+        </div>
+        
+        <div class="bg-white p-8 rounded-xl shadow">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-extrabold uppercase">🎓 Asistencia</h2>
+                <button onclick="exportarTablaDiplomas()" class="bg-blue-900 text-white font-bold py-2 px-4 rounded text-sm">📥 Exportar Excel</button>
+            </div>
+            <table id="tablaDiplomas" class="w-full text-left"><thead><tr class="bg-forestaBlack text-white text-xs uppercase"><th class="p-4">Emisión</th><th class="p-4">Doctor</th><th class="p-4">Evento</th><th class="p-4">Ticket</th><th class="p-4">Estado</th></tr></thead><tbody>${filasAsistencia||'<tr><td colspan="5" class="text-center p-4">Vacio</td></tr>'}</tbody></table>
+        </div>
+        </div>
+        <script>
+            document.getElementById('mensajeCampana').addEventListener('input', function(e) { let t = e.target.value || '[Oferta]'; t = t.replace(/\\*(.*?)\\*/g, '<strong>$1</strong>'); t = t.replace(/_(.*?)_/g, '<em>$1</em>'); document.getElementById('vistaPrevia').innerHTML = t; }); 
+            function mostrarOpcionFiltro() { const f = document.getElementById('tipoFiltro').value; ['Establecimiento','Etiqueta','Manual'].forEach(id => document.getElementById('cajaValor'+id).classList.add('hidden')); if(f!=='todos') document.getElementById('cajaValor'+f.charAt(0).toUpperCase()+f.slice(1)).classList.remove('hidden'); } 
+            async function disparar() { 
+                const nombre = document.getElementById('nombreCampana').value; const fecha_evento = document.getElementById('fechaEventoCampana').value; const enlace = document.getElementById('linkCampana').value; const banco = document.getElementById('bancoCampana').value; const mensaje = document.getElementById('mensajeCampana').value; const filtro = document.getElementById('tipoFiltro').value; let valorFiltro = ''; let telefonosManuales = []; 
+                if (filtro === 'establecimiento') valorFiltro = document.getElementById('valorEstablecimiento').value; 
+                if (filtro === 'etiqueta') valorFiltro = document.getElementById('valorEtiqueta').value; 
+                if (filtro === 'manual') { document.querySelectorAll('.checkbox-manual:checked').forEach(cb => telefonosManuales.push(cb.value)); if (telefonosManuales.length === 0) return alert("Selecciona doctor."); } 
+                if (!nombre.trim() || !mensaje.trim()) return alert("Faltan datos."); 
+                if (!confirm('¿Lanzar campaña?')) return; 
+                document.getElementById('btnEnviar').classList.add('hidden'); document.getElementById('textoCarga').classList.remove('hidden'); 
+                try { 
+                    const res = await fetch('/admin/broadcast/enviar', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ nombre, fecha_evento, enlace, banco, mensaje, filtro, valorFiltro, telefonosManuales }) }); 
+                    const result = await res.json(); 
+                    if(result.success){ alert('✅ ¡Disparada!'); window.location.reload(); } else { alert('❌ ERROR:\\n'+result.error_meta); window.location.reload(); } 
+                } catch(e){ alert('Error'); } 
+            } 
+            function exportarTablaDiplomas() { let wb = XLSX.utils.table_to_book(document.getElementById("tablaDiplomas")); XLSX.writeFile(wb, "Asistencia.xlsx"); }
+        </script>
+        <!-- Librería para Exportar a Excel -->
+        <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+        </body></html>`; 
+        res.send(html); 
+    } catch (e) { res.status(500).send("Error."); } 
 });
 
-router.post('/admin/broadcast/enviar', async (req, res) => {
-    try {
-        const dest = await Usuario.find();
-        const camp = await new Campana({ nombre_campana: req.body.nombre, fecha_evento: req.body.fecha, mensaje_cuerpo: req.body.mensaje }).save();
-        for (const d of dest) {
-            await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, {method:'POST', headers:{'Authorization':`Bearer ${process.env.WHATSAPP_TOKEN}`,'Content-Type':'application/json'}, body:JSON.stringify({messaging_product:'whatsapp', to:d.telefono, type:'text', text:{body: req.body.mensaje}}) });
-            await new Promise(r=>setTimeout(r,500));
-        }
-        res.json({success:true});
-    } catch(e) { res.json({success:false}); }
+router.post('/admin/broadcast/enviar', async (req, res) => { 
+    try { 
+        const { nombre, fecha_evento, enlace, banco, mensaje, filtro, valorFiltro, telefonosManuales } = req.body; 
+        let query = {}; 
+        if (filtro === 'establecimiento') query = { tipo_establecimiento: valorFiltro }; 
+        else if (filtro === 'etiqueta') query = { etiquetas: { $regex: valorFiltro, $options: 'i' } }; 
+        else if (filtro === 'manual') query = { telefono: { $in: telefonosManuales } }; 
+        
+        const destinatarios = await Usuario.find(query); 
+        if (destinatarios.length === 0) return res.json({ success: false, error_meta: "Nadie encontrado." }); 
+        
+        const nuevaCampana = new Campana({ nombre_campana: nombre, fecha_evento: fecha_evento ? new Date(fecha_evento) : null, mensaje_cuerpo: mensaje, enlace_pdf: enlace, datos_bancarios: banco, metricas_enviados: destinatarios.length }); 
+        await nuevaCampana.save(); 
+        
+        let errores = []; 
+        for (const dest of destinatarios) { 
+            const saludo = `🦷 *¡Hola ${dest.nombre_whatsapp}! Espero que tengas un excelente día.* ✨\n\n`; 
+            const pie = `\n\n👉 _Para más información o reservar tu cupo, responde a este mensaje con la palabra *INFO*._`; 
+            const msjFinal = saludo + mensaje.replace(/{{nombre}}/gi, dest.nombre_whatsapp) + pie; 
+            
+            await Usuario.findByIdAndUpdate(dest._id, { notas: (dest.notas || '')+`\n[📢 ${new Date().toLocaleDateString('es-EC')}]: ${nombre}`, ultima_campana: nuevaCampana._id }); 
+            const metaRes = await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', to: dest.telefono, type: 'text', text: { body: msjFinal } }) }); 
+            const metaData = await metaRes.json(); 
+            if (metaData.error) errores.push(`Bloqueado +${dest.telefono}: ${metaData.error.message}`); 
+            await new Promise(r => setTimeout(r, 500)); 
+        } 
+        
+        if (errores.length > 0) res.json({ success: false, error_meta: errores[0] }); 
+        else res.json({ success: true, intentos: destinatarios.length }); 
+    } catch (e) { res.json({ success: false, error_meta: "Error." }); } 
 });
 
-// 7. DASHBOARD, PEDIDOS, PROFORMAS Y CATÁLOGO
+// 7. DASHBOARD Y PEDIDOS (CON BOTÓN CAZADOR PARA PROFORMAS)
 router.get('/proforma/:id', async (req, res) => { 
     try { 
         const s = await Solicitud.findById(req.params.id); 
@@ -243,16 +330,13 @@ router.get('/proforma/:id', async (req, res) => {
     } catch (e) { res.status(500).send("Error"); } 
 });
 
-// 🚨 AQUÍ INTEGRAMOS EL "BOTÓN CAZADOR" EN LA TABLA PRINCIPAL
 router.get('/admin', async (req, res) => {
     try {
         const sol = await Solicitud.find().sort({ fecha: -1 });
         let filas = sol.map(s => {
             let btn = '';
             
-            // Lógica de botones según el estado
             if (s.tipo_solicitud === 'cotizacion' && (s.estado_atencion === 'pendiente' || s.estado_atencion === 'cotizado')) {
-                // Botón Cazador para proformas abandonadas
                 btn = `<button onclick="cazar('${s._id}')" class="bg-forestaGold text-white text-xs font-bold px-4 py-2 rounded shadow mb-1 w-full hover:bg-yellow-600 transition">🎯 Cazador (Seguimiento)</button><br>
                        <button onclick="act('${s._id}', 'cerrado')" class="bg-gray-300 text-gray-700 text-xs font-bold px-4 py-2 rounded w-full">✔️ Cerrar</button>`;
             } else if (s.tipo_solicitud === 'pedido' && s.estado_atencion === 'pendiente') {
@@ -280,7 +364,6 @@ router.get('/admin', async (req, res) => {
                 location.reload(); 
             }
             
-            // Función del Botón Cazador
             async function cazar(id) {
                 if(!confirm('¿Disparar mensaje corporativo de seguimiento por WhatsApp a este doctor?')) return;
                 try {
@@ -298,28 +381,21 @@ router.post('/admin/estado', async (req, res) => {
     try { await Solicitud.findByIdAndUpdate(req.body.id, { estado_atencion: req.body.estado }); res.json({success:true}); } catch(e) { res.json({success:false}); }
 });
 
-// 🚨 NUEVA RUTA BACKEND: ENVÍA EL WHATSAPP DEL CAZADOR
 router.post('/admin/solicitud/cazar', async (req, res) => {
     try {
         const sol = await Solicitud.findById(req.body.id);
         if (!sol) return res.json({ success: false });
 
-        // Armamos el enlace de la proforma
         const linkPdf = `https://${req.get('host')}/proforma/${sol._id}`;
-        
-        // El texto persuasivo
         const mensaje = `🦷 *Hola ${sol.nombre_cliente}*, le escribimos de Forestadent. ✨\n\n¿Pudo revisar la cotización que le enviamos recientemente?\n\n👉 Si desea proceder con el pedido, solo responda este mensaje con un *SÍ* y lo preparamos de inmediato.\n\n📄 Puede revisar el detalle corporativo de su cotización aquí: \n${linkPdf}`;
 
-        // Disparamos a WhatsApp Meta
         await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ messaging_product: 'whatsapp', to: sol.telefono_cliente, type: 'text', text: { body: mensaje } })
         });
         
-        // Marcamos en base de datos para saber que ya le hicimos retargeting
         await Solicitud.findByIdAndUpdate(req.body.id, { estado_atencion: 'recordatorio_enviado' });
-        
         res.json({ success: true });
     } catch (e) { res.json({ success: false }); }
 });
