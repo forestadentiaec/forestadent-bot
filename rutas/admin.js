@@ -74,7 +74,7 @@ router.post('/admin/pago/aprobar', async (req, res) => {
     } catch (e) { res.json({ success: false }); }
 });
 
-// 4. INVENTARIO E IA CON EXPORTACIÓN A PDF
+// 4. INVENTARIO E IA CON EXPORTACIÓN NATIVA (INFALIBLE)
 router.get('/admin/inventario', async (req, res) => {
     try {
         const prod = await Producto.find().sort({ categoria: 1, nombre: 1 });
@@ -84,13 +84,24 @@ router.get('/admin/inventario', async (req, res) => {
                 <td class="p-4"><input type="number" id="st_${p._id}" value="${p.stock_actual}" class="border-2 border-gray-300 w-24 p-2 text-center rounded-lg font-bold text-blue-700"></td>
                 <td class="p-4"><input type="number" id="seg_${p._id}" value="${p.stock_seguridad}" class="border w-24 p-2 text-center rounded-lg"></td>
                 <td class="p-4"><input type="number" id="lt_${p._id}" value="${p.lead_time_dias}" class="border w-20 p-2 text-center rounded-lg"></td>
-                <td class="p-4"><button onclick="guardarInv('${p._id}')" class="bg-gray-200 px-4 py-2 rounded font-bold">Guardar</button></td>
+                <td class="p-4 hide-on-print"><button onclick="guardarInv('${p._id}')" class="bg-gray-200 px-4 py-2 rounded font-bold">Guardar</button></td>
             </tr>
         `).join('');
 
-        res.send(`<!DOCTYPE html><html><head>${htmlHead}</head><body class="bg-gray-50 p-8"><div class="max-w-7xl mx-auto">${menuNavegacion}
-        <div class="bg-white p-8 rounded-xl shadow border-l-8 border-blue-600">
-            <div class="flex justify-between items-center mb-6">
+        res.send(`<!DOCTYPE html><html><head>${htmlHead}
+        <style>
+            @media print {
+                body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: white !important; }
+                body * { visibility: hidden; }
+                #pdfReporte, #pdfReporte * { visibility: visible; }
+                #pdfReporte { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 20px; border: none; box-shadow: none; }
+                .hide-on-print { display: none !important; }
+            }
+        </style>
+        </head><body class="bg-gray-50 p-8">
+        <div class="max-w-7xl mx-auto hide-on-print">${menuNavegacion}</div>
+        <div class="max-w-7xl mx-auto bg-white p-8 rounded-xl shadow border-l-8 border-blue-600 print:border-none print:shadow-none">
+            <div class="flex justify-between items-center mb-6 hide-on-print">
                 <h2 class="text-2xl font-extrabold uppercase">📦 Asistente de Compras (IA)</h2>
                 <button onclick="analizarIA()" id="btnIA" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow">🧠 Analizar Stock con IA</button>
             </div>
@@ -101,10 +112,10 @@ router.get('/admin/inventario', async (req, res) => {
                     <div id="textoReporte" class="text-sm text-gray-800" style="line-height: 1.6;"></div>
                     <p class="text-xs text-gray-400 mt-8 pt-4 border-t border-gray-100 text-center font-bold">Generado por Inteligencia Artificial • Forestadent B2B Ecuador • ${new Date().toLocaleDateString('es-EC')}</p>
                 </div>
-                <button onclick="descargarPDF()" class="mt-4 bg-forestaBlack text-white font-bold py-3 px-6 rounded-lg shadow-lg w-full hover:bg-gray-800 transition">📥 Descargar Informe (PDF)</button>
+                <button onclick="window.print()" class="mt-4 bg-forestaBlack text-white font-bold py-3 px-6 rounded-lg shadow-lg w-full hover:bg-gray-800 transition hide-on-print">🖨️ Imprimir / Guardar como PDF</button>
             </div>
             
-            <table class="w-full text-left">
+            <table class="w-full text-left hide-on-print">
                 <thead><tr class="bg-forestaBlack text-white text-xs uppercase"><th class="p-4">SKU & Nombre</th><th class="p-4">Stock Actual</th><th class="p-4">Seguridad</th><th class="p-4">Tránsito</th><th class="p-4">Acción</th></tr></thead>
                 <tbody>${filas}</tbody>
             </table>
@@ -129,11 +140,7 @@ router.get('/admin/inventario', async (req, res) => {
                     }
                 } catch(e) { texto.innerHTML = '<div class="text-red-600 font-bold">❌ Error de conexión.</div>'; }
             }
-            function descargarPDF() {
-                const elemento = document.getElementById('pdfReporte');
-                html2pdf().set({ margin: 15, filename: 'Reporte_Logistico_Forestadent.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(elemento).save();
-            }
-        </script></div></body></html>`);
+        </script></body></html>`);
     } catch (e) { res.status(500).send('Error'); }
 });
 
@@ -228,7 +235,10 @@ router.get('/proforma/:id', async (req, res) => {
         if (!s || s.tipo_solicitud !== 'cotizacion') return res.status(404).send('No encontrada.'); 
         const f = new Date(s.fecha).toLocaleDateString('es-EC'); const n = s._id.toString().slice(-6).toUpperCase(); 
         let t = s.contenido_texto.replace(/[*_~]/g, ''); 
-        let h = `<!DOCTYPE html><html><head><title>Proforma</title>${htmlHead}</head><body class="bg-gray-100 p-8"><div id="pdf" class="bg-white p-12 rounded-xl max-w-3xl mx-auto border-t-8 border-forestaGold"><div class="flex justify-between border-b-2 pb-6"><img src="/logo-vector-forestadent.webp" class="h-16" onerror="this.style.display='none'"><div class="text-right"><h1 class="text-2xl font-extrabold uppercase">Proforma</h1><p class="text-sm font-bold text-forestaGold">DOC-${n}</p></div></div><div class="grid grid-cols-2 gap-6 mb-8 mt-6"><div><p class="text-xs font-bold text-gray-400">Cliente:</p><p class="text-lg font-bold">${s.nombre_cliente}</p><p class="text-sm text-gray-500">+${s.telefono_cliente}</p></div><div class="text-right"><p class="text-xs font-bold text-gray-400">Fecha:</p><p class="font-bold">${f}</p></div></div><div class="bg-gray-50 p-8 rounded-xl border"><pre class="font-sans whitespace-pre-wrap font-medium">${t}</pre></div><div class="text-center mt-6 pt-6 border-t-2"><p class="text-xs font-bold text-gray-400">Generado por IA • Forestadent B2B</p></div></div><div class="text-center mt-8 hide-on-print"><button onclick="html2pdf().set({margin:10, filename:'Proforma_${n}.pdf'}).from(document.getElementById('pdf')).save()" class="bg-forestaBlack text-white font-bold py-3 px-6 rounded">📥 Descargar PDF</button></div><style>@media print { .hide-on-print { display: none !important; } }</style></body></html>`; 
+        let h = `<!DOCTYPE html><html><head><title>Proforma DOC-${n}</title>${htmlHead}
+        <style>@media print { .hide-on-print { display: none !important; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }</style>
+        </head><body class="bg-gray-100 p-8"><div id="pdf" class="bg-white p-12 rounded-xl max-w-3xl mx-auto border-t-8 border-forestaGold"><div class="flex justify-between border-b-2 pb-6"><img src="/logo-vector-forestadent.webp" class="h-16" onerror="this.style.display='none'"><div class="text-right"><h1 class="text-2xl font-extrabold uppercase">Proforma</h1><p class="text-sm font-bold text-forestaGold">DOC-${n}</p></div></div><div class="grid grid-cols-2 gap-6 mb-8 mt-6"><div><p class="text-xs font-bold text-gray-400">Cliente:</p><p class="text-lg font-bold">${s.nombre_cliente}</p><p class="text-sm text-gray-500">+${s.telefono_cliente}</p></div><div class="text-right"><p class="text-xs font-bold text-gray-400">Fecha:</p><p class="font-bold">${f}</p></div></div><div class="bg-gray-50 p-8 rounded-xl border"><pre class="font-sans whitespace-pre-wrap font-medium">${t}</pre></div><div class="text-center mt-6 pt-6 border-t-2"><p class="text-xs font-bold text-gray-400">Generado por IA • Forestadent B2B</p></div></div>
+        <div class="text-center mt-8 hide-on-print"><button onclick="window.print()" class="bg-forestaBlack text-white font-bold py-3 px-6 rounded">🖨️ Imprimir / Guardar como PDF</button></div></body></html>`; 
         res.send(h); 
     } catch (e) { res.status(500).send("Error"); } 
 });
