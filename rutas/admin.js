@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const QRCode = require('qrcode');
+const { GoogleGenerativeAI } = require('@google/generative-ai'); // 🚨 NUEVO: El motor de IA para el inventario
 
 const { Usuario, Solicitud, Producto, Campana, Ticket } = require('../modelos/BaseDatos');
 const { htmlHead, menuNavegacion, scriptExportarExcel } = require('../vistas/Plantillas');
@@ -14,224 +15,146 @@ router.get('/ticket/qr/:id', async (req, res) => {
     } catch(e) { res.status(500).send('Error generando QR'); }
 });
 
-// 2. PANTALLA SECRETA DE ESCÁNER (CON PIN DE SEGURIDAD)
+// 2. PANTALLA SECRETA DE ESCÁNER
 router.get('/escanear/:id', async (req, res) => {
     try {
         const ticket = await Ticket.findOne({ id_unico: req.params.id });
         if (!ticket) return res.send(`<h1 style="color:red; text-align:center; font-family:sans-serif; margin-top:50px;">❌ TICKET FALSO O INEXISTENTE</h1>`);
-
-        let estadoHtml = '';
-        let btnHtml = '';
-
+        let estadoHtml = ''; let btnHtml = '';
         if (ticket.asistencia_confirmada) {
             estadoHtml = `<div style="background:#FEE2E2; color:#991B1B; padding:20px; border-radius:10px; font-size:20px; font-weight:bold; margin-bottom:20px;">⚠️ ALERTA: ESTE TICKET YA FUE USADO<br><span style="font-size:14px; font-weight:normal;">Fecha de ingreso: ${new Date(ticket.fecha_escaneo).toLocaleString('es-EC')}</span></div>`;
         } else {
             estadoHtml = `<div style="background:#D1FAE5; color:#065F46; padding:20px; border-radius:10px; font-size:20px; font-weight:bold; margin-bottom:20px;">✅ TICKET VÁLIDO</div>`;
-            btnHtml = `
-                <div style="margin-top:20px;">
-                    <p style="font-size:12px; font-weight:bold; color:#6b7280; text-transform:uppercase; margin-bottom:5px;">🔑 PIN de Seguridad Staff:</p>
-                    <input type="password" id="pinAcceso" placeholder="****" maxlength="4" style="text-align:center; font-size:24px; font-weight:bold; width:120px; padding:10px; margin-bottom:15px; border:2px solid #ccc; border-radius:8px; outline:none;">
-                    <button onclick="marcar()" style="background:#111111; color:white; padding:15px 30px; font-size:18px; font-weight:bold; border-radius:8px; border:none; cursor:pointer; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">🎟️ PERMITIR INGRESO</button>
-                </div>
-            `;
+            btnHtml = `<div style="margin-top:20px;"><p style="font-size:12px; font-weight:bold; color:#6b7280; text-transform:uppercase; margin-bottom:5px;">🔑 PIN Staff:</p><input type="password" id="pinAcceso" placeholder="****" maxlength="4" style="text-align:center; font-size:24px; font-weight:bold; width:120px; padding:10px; margin-bottom:15px; border:2px solid #ccc; border-radius:8px; outline:none;"><button onclick="marcar()" style="background:#111111; color:white; padding:15px 30px; font-size:18px; font-weight:bold; border-radius:8px; border:none; cursor:pointer; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">🎟️ PERMITIR INGRESO</button></div>`;
         }
-
-        let html = `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Escáner Forestadent</title></head>
-        <body style="font-family:sans-serif; background:#f9fafb; text-align:center; padding:20px; margin:0;">
-            <div style="background:white; padding:30px; border-radius:15px; box-shadow:0 4px 10px rgba(0,0,0,0.1); max-width:400px; margin:20px auto; border-top:8px solid #B4975A;">
-                <h2 style="margin-top:0; color:#111111; text-transform:uppercase; font-size:16px; letter-spacing:2px;">🎫 Control de Acceso</h2>
-                <h1 style="color:#B4975A; font-size:36px; margin:10px 0;">${ticket.id_unico}</h1>
-                <p style="color:#6b7280; margin-bottom:5px; font-size:14px; text-transform:uppercase;">Doctor/a:</p>
-                <p style="font-size:24px; font-weight:bold; margin-top:0; color:#111111;">${ticket.nombre_cliente}</p>
-                <p style="color:#6b7280; margin-bottom:5px; font-size:14px; text-transform:uppercase;">Evento Oficial:</p>
-                <p style="font-size:18px; font-weight:bold; margin-top:0; margin-bottom:30px; color:#111111;">${ticket.nombre_evento}</p>
-                ${estadoHtml}
-                ${btnHtml}
-            </div>
-            <script>
-                async function marcar() {
-                    const pin = document.getElementById('pinAcceso').value;
-                    if(!pin) return alert('Debes ingresar el PIN de seguridad');
-                    if(!confirm('¿Permitir ingreso a ${ticket.nombre_cliente}?')) return;
-                    
-                    const res = await fetch('/ticket/marcar', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: '${ticket.id_unico}', pin: pin}) });
-                    const data = await res.json();
-                    
-                    if(data.success) { alert('✅ Ingreso Confirmado'); window.location.reload(); }
-                    else { alert('❌ ' + data.error); }
-                }
-            </script>
-        </body></html>`;
+        let html = `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Escáner Forestadent</title></head><body style="font-family:sans-serif; background:#f9fafb; text-align:center; padding:20px; margin:0;"><div style="background:white; padding:30px; border-radius:15px; box-shadow:0 4px 10px rgba(0,0,0,0.1); max-width:400px; margin:20px auto; border-top:8px solid #B4975A;"><h2 style="margin-top:0; color:#111111; text-transform:uppercase; font-size:16px; letter-spacing:2px;">🎫 Control de Acceso</h2><h1 style="color:#B4975A; font-size:36px; margin:10px 0;">${ticket.id_unico}</h1><p style="color:#6b7280; margin-bottom:5px; font-size:14px; text-transform:uppercase;">Doctor/a:</p><p style="font-size:24px; font-weight:bold; margin-top:0; color:#111111;">${ticket.nombre_cliente}</p><p style="color:#6b7280; margin-bottom:5px; font-size:14px; text-transform:uppercase;">Evento Oficial:</p><p style="font-size:18px; font-weight:bold; margin-top:0; margin-bottom:30px; color:#111111;">${ticket.nombre_evento}</p>${estadoHtml}${btnHtml}</div><script>async function marcar() { const pin = document.getElementById('pinAcceso').value; if(!pin) return alert('Ingresa el PIN'); if(!confirm('¿Permitir ingreso?')) return; const res = await fetch('/ticket/marcar', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id: '${ticket.id_unico}', pin: pin}) }); const data = await res.json(); if(data.success) { alert('✅ Ingreso Confirmado'); window.location.reload(); } else { alert('❌ ' + data.error); } }</script></body></html>`;
         res.send(html);
     } catch(e) { res.status(500).send('Error'); }
 });
-
-// 3. VALIDACIÓN DEL PIN Y ASISTENCIA
 router.post('/ticket/marcar', async (req, res) => {
     try {
-        if (req.body.pin !== '2026') return res.json({ success: false, error: 'PIN de seguridad incorrecto' });
-        
-        await Ticket.findOneAndUpdate({ id_unico: req.body.id }, { asistencia_confirmada: true, fecha_escaneo: Date.now() });
-        res.json({ success: true });
-    } catch(e) { res.json({ success: false, error: 'Error interno' }); }
+        if (req.body.pin !== '2026') return res.json({ success: false, error: 'PIN incorrecto' });
+        await Ticket.findOneAndUpdate({ id_unico: req.body.id }, { asistencia_confirmada: true, fecha_escaneo: Date.now() }); res.json({ success: true });
+    } catch(e) { res.json({ success: false, error: 'Error' }); }
 });
 
-// 4. APROBACIÓN DE PAGO (ENVÍA EL QR)
+// 3. PAGOS Y CREADOR DE TICKETS
 router.post('/admin/pago/aprobar', async (req, res) => {
     try {
         const sol = await Solicitud.findByIdAndUpdate(req.body.id_solicitud, { estado_atencion: 'pago_aprobado' });
-        
         if (req.body.id_campana) {
             await Campana.findByIdAndUpdate(req.body.id_campana, { $inc: { metricas_pagos: 1 } });
             const camp = await Campana.findById(req.body.id_campana);
             const idTicket = 'FST-' + Math.random().toString(36).substring(2, 7).toUpperCase();
             await new Ticket({ id_unico: idTicket, telefono_cliente: sol.telefono_cliente, nombre_cliente: sol.nombre_cliente, nombre_evento: camp.nombre_campana }).save();
             const urlImagenQR = `https://${req.get('host')}/ticket/qr/${idTicket}`;
-
-            await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', to: sol.telefono_cliente, type: 'image', image: { link: urlImagenQR, caption: `🎉 *¡Pago Aprobado y Confirmado!*\n\nTu plaza para el evento *${camp.nombre_campana}* está 100% asegurada.\n\n🎟️ *ESTE ES TU PASE VIP.*\nPor favor, preséntalo (este código QR) desde tu celular en la puerta de ingreso el día del evento.\n\nNos emociona mucho contar contigo. ✨` } }) });
+            await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', to: sol.telefono_cliente, type: 'image', image: { link: urlImagenQR, caption: `🎉 *¡Pago Aprobado y Confirmado!*\n\nTu plaza para el evento *${camp.nombre_campana}* está asegurada.\n\n🎟️ *ESTE ES TU PASE VIP.*\nPreséntalo desde tu celular en la puerta el día del evento.` } }) });
         } else {
-            await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', to: sol.telefono_cliente, type: 'text', text: { body: `🎉 *¡Pago Aprobado!*\n\nTu pago ha sido validado exitosamente. Procederemos con el despacho de tus productos.` } }) });
-        }
-        res.json({ success: true });
-    } catch (e) { console.error(e); res.json({ success: false }); }
+            await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', to: sol.telefono_cliente, type: 'text', text: { body: `🎉 *¡Pago Aprobado!*\n\nProcederemos con el despacho.` } }) });
+        } res.json({ success: true });
+    } catch (e) { res.json({ success: false }); }
 });
 
-// 5. GESTOR DE CAMPAÑAS Y CURSOS (CON FECHA DE EVENTO Y TABLA DE DIPLOMAS)
-router.get('/admin/broadcast', async (req, res) => { 
-    try { 
-        const clientes = await Usuario.find().sort({ nombre_whatsapp: 1 }); 
-        const historialCampanas = await Campana.find().sort({ fecha_envio: -1 }); 
-        const tickets = await Ticket.find().sort({ fecha_emision: -1 });
-
-        let listaCheckboxes = ''; 
-        clientes.forEach(c => { listaCheckboxes += `<label class="flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg cursor-pointer"><input type="checkbox" value="${c.telefono}" class="checkbox-manual w-5 h-5 text-green-600 rounded"><span class="text-sm font-bold text-forestaBlack">${c.nombre_whatsapp} <span class="text-gray-400 font-medium ml-1">(+${c.telefono})</span></span></label>`; }); 
-        
-        let filasHistorial = ''; 
-        historialCampanas.forEach(camp => { 
-            let fechaEvt = camp.fecha_evento ? new Date(camp.fecha_evento).toLocaleString('es-EC') : 'Sin fecha programada';
-            filasHistorial += `<tr class="border-b"><td class="p-4 text-xs font-medium text-gray-500">${fechaEvt}</td><td class="p-4 font-bold text-forestaBlack">${camp.nombre_campana}</td><td class="p-4 text-center font-bold">${camp.metricas_enviados}</td><td class="p-4 text-center font-bold text-blue-600 bg-blue-50">${camp.metricas_info}</td><td class="p-4 text-center font-bold text-yellow-600 bg-yellow-50">${camp.metricas_reservas}</td><td class="p-4 text-center font-bold text-green-600 bg-green-50">${camp.metricas_pagos}</td></tr>`; 
-        }); 
-        
-        let filasAsistencia = '';
-        tickets.forEach(t => {
-            let estado = t.asistencia_confirmada ? '<span class="text-green-600 font-bold bg-green-100 px-3 py-1 rounded-full text-xs">🟢 Asistió</span>' : '<span class="text-red-500 font-bold bg-red-100 px-3 py-1 rounded-full text-xs">🔴 Ausente</span>';
-            filasAsistencia += `<tr class="border-b hover:bg-gray-50"><td class="p-4 text-xs font-medium text-gray-500">${new Date(t.fecha_emision).toLocaleDateString('es-EC')}</td><td class="p-4 font-bold text-forestaBlack">${t.nombre_cliente}<br><span class="text-xs font-normal text-gray-400">+${t.telefono_cliente}</span></td><td class="p-4 font-bold text-gray-700">${t.nombre_evento}</td><td class="p-4 text-sm font-medium text-gray-500">${t.id_unico}</td><td class="p-4 text-center">${estado}</td></tr>`;
-        });
-
-        let html = `<!DOCTYPE html><html><head><title>Campañas y Diplomas</title>${htmlHead}</head><body class="bg-gray-50 p-8"><div class="max-w-7xl mx-auto">${menuNavegacion}
-        
-        <div class="bg-white p-8 rounded-xl shadow-lg border-l-8 border-green-600 mb-8"><h2 class="text-2xl font-extrabold mb-2 uppercase">📢 Gestor de Campañas y Cursos</h2><div class="grid grid-cols-2 gap-8"><div><label class="block text-sm font-bold uppercase mb-2">1. Público</label><select id="tipoFiltro" onchange="mostrarOpcionFiltro()" class="w-full border p-3 rounded mb-4 font-bold"><option value="todos">🌍 TODOS</option><option value="establecimiento">🏥 Por Establecimiento</option><option value="etiqueta">🏷️ Por Etiqueta</option><option value="manual">🎯 Manual</option></select><div id="cajaValorEstablecimiento" class="hidden mb-4"><select id="valorEstablecimiento" class="w-full border p-3 rounded"><option value="consultorio">Consultorio</option><option value="clínica">Clínica</option></select></div><div id="cajaValorEtiqueta" class="hidden mb-4"><input type="text" id="valorEtiqueta" placeholder="Ej: VIP" class="w-full border p-3 rounded"></div><div id="cajaValorManual" class="hidden mb-4"><div class="border rounded p-4 max-h-60 overflow-y-auto">${listaCheckboxes}</div></div><label class="block text-sm font-bold uppercase mb-2 mt-4">2. Estructura</label><input type="text" id="nombreCampana" placeholder="Nombre interno (Ej: Seminario FACE)" class="w-full border p-3 font-bold mb-3"><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Fecha y Hora del Evento (Para Recordatorios):</label><input type="datetime-local" id="fechaEventoCampana" class="w-full border p-3 font-bold mb-3 bg-gray-50"><input type="text" id="linkCampana" placeholder="🔗 Enlace del PDF (Se envía si piden INFO)" class="w-full border p-3 mb-3"><textarea id="bancoCampana" rows="2" placeholder="🏦 Datos Bancarios (Se envía si dicen RESERVAR)" class="w-full border p-3 mb-3"></textarea><label class="block text-sm font-bold uppercase mb-2">3. Oferta Principal</label><textarea id="mensajeCampana" rows="5" placeholder="Escribe tu mensaje..." class="w-full border p-4 mb-4"></textarea><button onclick="disparar()" id="btnEnviar" class="w-full bg-green-600 text-white font-bold py-4 rounded uppercase">🚀 Lanzar Campaña</button><p id="textoCarga" class="text-green-600 font-bold mt-4 text-center hidden">⏳ Enviando...</p></div><div class="bg-gray-100 p-6 rounded-xl flex flex-col items-center"><p class="text-xs font-bold mb-4 uppercase">Vista Previa Celular</p><div class="bg-white p-5 rounded-xl shadow w-full"><p class="text-sm font-medium mb-4">🦷 ¡Hola Dr. Juan Pérez! Espero que tengas un excelente día. ✨</p><p id="vistaPrevia" class="text-sm font-bold whitespace-pre-wrap">[Oferta]</p><p class="text-sm font-medium mt-4 italic">👉 Para más información o reservar tu cupo, responde a este mensaje con la palabra <strong>INFO</strong>.</p></div></div></div></div>
-        
-        <div class="bg-white p-8 rounded-xl shadow mb-8"><h2 class="text-xl font-extrabold mb-6 uppercase">📊 Historial y Rendimiento</h2><table class="w-full text-left"><thead><tr class="bg-forestaBlack text-white text-xs uppercase"><th class="p-4">Fecha Evento</th><th class="p-4">Campaña</th><th class="p-4 text-center">Enviados</th><th class="p-4 text-center">Pidieron INFO</th><th class="p-4 text-center">Reservas</th><th class="p-4 text-center">Pagados</th></tr></thead><tbody>${filasHistorial || '<tr><td colspan="6" class="text-center p-4">No hay campañas.</td></tr>'}</tbody></table></div>
-        
-        <div class="bg-white p-8 rounded-xl shadow mt-8">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-extrabold uppercase">🎓 Asistencia y Diplomas</h2>
-                <button onclick="exportarTablaDiplomas()" class="bg-blue-900 hover:bg-blue-800 text-white font-bold py-3 px-5 rounded text-sm transition shadow">📥 Exportar a Excel</button>
-            </div>
-            <table id="tablaDiplomas" class="w-full text-left">
-                <thead>
-                    <tr class="bg-forestaBlack text-white text-xs uppercase">
-                        <th class="p-4">Emisión</th><th class="p-4">Doctor</th><th class="p-4">Evento / Curso</th><th class="p-4">Ticket</th><th class="p-4 text-center">Estado</th>
-                    </tr>
-                </thead>
-                <tbody>${filasAsistencia || '<tr><td colspan="5" class="text-center p-4 text-gray-500">Aún no hay tickets emitidos o vendidos.</td></tr>'}</tbody>
-            </table>
-        </div>
-        
-        </div><script>document.getElementById('mensajeCampana').addEventListener('input', function(e) { let t = e.target.value || '[Oferta]'; t = t.replace(/\\*(.*?)\\*/g, '<strong>$1</strong>'); t = t.replace(/_(.*?)_/g, '<em>$1</em>'); document.getElementById('vistaPrevia').innerHTML = t; }); function mostrarOpcionFiltro() { const f = document.getElementById('tipoFiltro').value; ['Establecimiento','Etiqueta','Manual'].forEach(id => document.getElementById('cajaValor'+id).classList.add('hidden')); if(f!=='todos') document.getElementById('cajaValor'+f.charAt(0).toUpperCase()+f.slice(1)).classList.remove('hidden'); } async function disparar() { const nombre = document.getElementById('nombreCampana').value; const fecha_evento = document.getElementById('fechaEventoCampana').value; const enlace = document.getElementById('linkCampana').value; const banco = document.getElementById('bancoCampana').value; const mensaje = document.getElementById('mensajeCampana').value; const filtro = document.getElementById('tipoFiltro').value; let valorFiltro = ''; let telefonosManuales = []; if (filtro === 'establecimiento') valorFiltro = document.getElementById('valorEstablecimiento').value; if (filtro === 'etiqueta') valorFiltro = document.getElementById('valorEtiqueta').value; if (filtro === 'manual') { document.querySelectorAll('.checkbox-manual:checked').forEach(cb => telefonosManuales.push(cb.value)); if (telefonosManuales.length === 0) return alert("Selecciona doctor."); } if (!nombre.trim() || !mensaje.trim()) return alert("Faltan datos."); if (!confirm('¿Lanzar campaña oficial?')) return; document.getElementById('btnEnviar').classList.add('hidden'); document.getElementById('textoCarga').classList.remove('hidden'); try { const res = await fetch('/admin/broadcast/enviar', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ nombre, fecha_evento, enlace, banco, mensaje, filtro, valorFiltro, telefonosManuales }) }); const result = await res.json(); if(result.success){ alert('✅ ¡Disparada!'); window.location.reload(); } else { alert('❌ ERROR META:\\n'+result.error_meta); window.location.reload(); } } catch(e){ alert('Error'); } } function exportarTablaDiplomas() { let wb = XLSX.utils.table_to_book(document.getElementById("tablaDiplomas")); XLSX.writeFile(wb, "Reporte_Asistencia.xlsx"); }</script></body></html>`; res.send(html); 
-    } catch (e) { res.status(500).send("Error."); } 
-});
-
-// 6. RUTA DE ENVÍO DE BROADCAST CON FECHA DE EVENTO
-router.post('/admin/broadcast/enviar', async (req, res) => { 
-    try { 
-        const { nombre, fecha_evento, enlace, banco, mensaje, filtro, valorFiltro, telefonosManuales } = req.body; 
-        let query = {}; 
-        if (filtro === 'establecimiento') query = { tipo_establecimiento: valorFiltro }; 
-        else if (filtro === 'etiqueta') query = { etiquetas: { $regex: valorFiltro, $options: 'i' } }; 
-        else if (filtro === 'manual') query = { telefono: { $in: telefonosManuales } }; 
-        
-        const destinatarios = await Usuario.find(query); 
-        if (destinatarios.length === 0) return res.json({ success: false, error_meta: "No se encontraron clientes." }); 
-        
-        const nuevaCampana = new Campana({ 
-            nombre_campana: nombre, 
-            fecha_evento: fecha_evento ? new Date(fecha_evento) : null,
-            mensaje_cuerpo: mensaje, 
-            enlace_pdf: enlace, 
-            datos_bancarios: banco, 
-            metricas_enviados: destinatarios.length 
-        }); 
-        await nuevaCampana.save(); 
-        
-        let errores = []; 
-        for (const dest of destinatarios) { 
-            const saludo = `🦷 *¡Hola ${dest.nombre_whatsapp}! Espero que tengas un excelente día.* ✨\n\n`; 
-            const pie = `\n\n👉 _Para más información o reservar tu cupo, responde a este mensaje con la palabra *INFO*._`; 
-            const msjFinal = saludo + mensaje.replace(/{{nombre}}/gi, dest.nombre_whatsapp) + pie; 
-            
-            await Usuario.findByIdAndUpdate(dest._id, { notas: (dest.notas || '')+`\n[📢 ${new Date().toLocaleDateString('es-EC')}]: ${nombre}`, ultima_campana: nuevaCampana._id }); 
-            const metaRes = await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', to: dest.telefono, type: 'text', text: { body: msjFinal } }) }); 
-            const metaData = await metaRes.json(); 
-            if (metaData.error) errores.push(`Bloqueado +${dest.telefono}: ${metaData.error.message}`); 
-            await new Promise(r => setTimeout(r, 500)); 
-        } 
-        if (errores.length > 0) res.json({ success: false, error_meta: errores[0] }); else res.json({ success: true, intentos: destinatarios.length }); 
-    } catch (e) { res.json({ success: false, error_meta: "Error del servidor." }); } 
-});
-
-// 7. CRM CLIENTES (FICHA PROFESIONAL COMPLETA)
-router.get('/admin/clientes', async (req, res) => {
+// 🚨 4. GESTOR DE INVENTARIO E INTELIGENCIA ARTIFICIAL
+router.get('/admin/inventario', async (req, res) => {
     try {
-        const clRaw = await Usuario.find().sort({ fecha_registro: -1 });
-        const clientes = await Promise.all(clRaw.map(async (c) => {
-            const uPed = await Solicitud.findOne({ telefono_cliente: c.telefono, tipo_solicitud: 'pedido' }).sort({ fecha: -1 });
-            let dias = 999; if (uPed) dias = Math.ceil(Math.abs(new Date() - new Date(uPed.fecha)) / 86400000);
-            let sem = '🔴 Inactivo'; let col = 'bg-red-100 text-red-700';
-            if (dias <= 15) { sem = '🟢 Activo'; col = 'bg-green-100 text-green-700'; } else if (dias <= 30) { sem = '🟡 Enfriándose'; col = 'bg-yellow-100 text-yellow-700'; }
-            return { ...c.toObject(), sem, col, dias };
-        }));
-
-        let html = `<!DOCTYPE html><html><head><title>CRM Ficha Profesional</title>${htmlHead}</head><body class="bg-gray-50 p-8"><div class="max-w-7xl mx-auto">${menuNavegacion}<div class="bg-white rounded-xl shadow-lg overflow-x-auto"><table class="w-full text-left"><thead><tr class="bg-forestaBlack text-white text-xs uppercase"><th class="p-4">Actividad</th><th class="p-4">Doctor / Cliente</th><th class="p-4">Ubicación / Dir</th><th class="p-4">Especialidad</th><th class="p-4">Etiquetas y Notas</th><th class="p-4 text-center">Acción</th></tr></thead><tbody class="divide-y">`;
+        const prod = await Producto.find().sort({ categoria: 1, nombre: 1 });
+        let html = `<!DOCTYPE html><html><head><title>Inventario & IA</title>${htmlHead}</head><body class="bg-gray-50 p-8"><div class="max-w-7xl mx-auto">${menuNavegacion}
+        <div class="bg-white p-8 rounded-xl shadow-lg border-l-8 border-blue-600 mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <div><h2 class="text-2xl font-extrabold uppercase text-forestaBlack">📦 Asistente de Compras (IA)</h2><p class="text-sm text-gray-500 font-medium mt-1">Sincronización simulada de stock. La IA cruza tu inventario con los tiempos de importación.</p></div>
+                <button onclick="analizarIA()" id="btnIA" class="bg-blue-600 hover:bg-blue-800 text-white px-6 py-4 rounded-xl font-bold shadow-lg transition flex items-center gap-2">🧠 Analizar Stock con IA</button>
+            </div>
+            
+            <div id="respuestaIA" class="hidden bg-blue-50 p-6 rounded-xl border border-blue-200 mb-8 text-sm text-gray-800 shadow-inner" style="line-height: 1.6;"></div>
+            
+            <div class="overflow-x-auto"><table class="w-full text-left">
+                <thead><tr class="bg-forestaBlack text-white text-xs uppercase"><th class="p-4 rounded-tl-lg">SKU & Nombre</th><th class="p-4 text-center">Stock Actual</th><th class="p-4 text-center">Stock Seguridad</th><th class="p-4 text-center">Lead Time (Días)</th><th class="p-4 text-center rounded-tr-lg">Acción</th></tr></thead>
+                <tbody class="divide-y">`;
         
-        clientes.forEach(c => { 
-            html += `<tr>
-                <td class="p-4"><span class="px-2 py-1 text-xs font-bold rounded ${c.col}">${c.sem}</span></td>
-                <td class="p-4 font-bold">${c.nombre_whatsapp}<br><span class="text-xs font-normal text-gray-500">+${c.telefono}</span><br><input type="text" id="cumple_${c._id}" value="${c.cumpleanos || ''}" placeholder="🎂 Cumple (DD/MM)" class="border p-1 text-xs mt-1 w-32 rounded"></td>
-                <td class="p-4"><input type="text" id="ciudad_${c._id}" value="${c.ciudad || 'Quito'}" placeholder="Ciudad" class="border p-1 text-xs mb-1 w-full rounded font-bold"><input type="text" id="dir_${c._id}" value="${c.direccion || ''}" placeholder="Dirección consultorio" class="border p-1 text-xs w-full rounded"><select id="lugar_${c._id}" class="border p-1 text-xs mt-1 w-full rounded bg-gray-50"><option value="consultorio" ${c.tipo_establecimiento==='consultorio'?'selected':''}>Consultorio</option><option value="clínica" ${c.tipo_establecimiento==='clínica'?'selected':''}>Clínica</option></select></td>
-                <td class="p-4"><input type="text" id="esp_${c._id}" value="${c.especialidad || 'Ortodoncia'}" placeholder="Especialidad" class="border p-1 text-xs w-full rounded font-semibold"></td>
-                <td class="p-4"><input id="etiq_${c._id}" value="${c.etiquetas || ''}" placeholder="Etiquetas (Ej: VIP)" class="border p-1 text-xs w-full rounded mb-1"><textarea id="notas_${c._id}" placeholder="Notas internas..." class="border p-1 text-xs w-full rounded" rows="2">${c.notas || ''}</textarea></td>
-                <td class="p-4 text-center"><button onclick="guardar('${c._id}')" class="bg-forestaGold hover:bg-forestaGoldHover text-white text-xs font-bold px-4 py-2 rounded shadow">Guardar</button></td>
-            </tr>`; 
+        prod.forEach(p => {
+            let alerta = '';
+            if (p.stock_actual <= p.stock_seguridad) alerta = '<span class="text-red-600 text-xs font-bold block mt-1 uppercase tracking-wide">⚠️ Peligro de Quiebre</span>';
+            else if (p.stock_actual <= (p.stock_seguridad * 1.5)) alerta = '<span class="text-yellow-600 text-xs font-bold block mt-1 uppercase tracking-wide">⚡ Reposición Próxima</span>';
+            
+            html += `<tr class="hover:bg-gray-50 transition">
+                <td class="p-4"><p class="font-bold text-gray-800">${p.codigo}</p><p class="text-sm font-medium text-gray-600">${p.nombre}</p>${alerta}</td>
+                <td class="p-4 text-center"><input type="number" id="st_${p._id}" value="${p.stock_actual}" class="border-2 border-gray-300 w-24 p-2 text-center rounded-lg font-extrabold text-lg text-blue-700"></td>
+                <td class="p-4 text-center"><input type="number" id="seg_${p._id}" value="${p.stock_seguridad}" class="border w-24 p-2 text-center rounded-lg bg-gray-50"></td>
+                <td class="p-4 text-center"><div class="flex items-center justify-center"><input type="number" id="lt_${p._id}" value="${p.lead_time_dias}" class="border w-20 p-2 text-center rounded-lg mr-2"> <span class="text-xs font-bold text-gray-400">días</span></div></td>
+                <td class="p-4 text-center"><button onclick="guardarInv('${p._id}')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded text-xs font-bold transition">Actualizar</button></td>
+            </tr>`;
         });
-
-        html += `</tbody></table></div></div><script>async function guardar(id) { const data = { id, ciudad: document.getElementById('ciudad_'+id).value, direccion: document.getElementById('dir_'+id).value, tipo_establecimiento: document.getElementById('lugar_'+id).value, especialidad: document.getElementById('esp_'+id).value, cumpleanos: document.getElementById('cumple_'+id).value, etiquetas: document.getElementById('etiq_'+id).value, notas: document.getElementById('notas_'+id).value }; const res = await fetch('/admin/clientes/actualizar', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) }); const r = await res.json(); if(r.success) alert('✅ Ficha actualizada con éxito'); else alert('❌ Error al guardar'); }</script></body></html>`;
+        
+        html += `</tbody></table></div></div></div>
+        <script>
+            async function guardarInv(id){ 
+                const data = { id, stock_actual: document.getElementById('st_'+id).value, stock_seguridad: document.getElementById('seg_'+id).value, lead_time_dias: document.getElementById('lt_'+id).value }; 
+                await fetch('/admin/inventario/actualizar', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); 
+                alert('✅ Parámetros guardados'); window.location.reload();
+            }
+            async function analizarIA(){
+                const btn = document.getElementById('btnIA'); const resp = document.getElementById('respuestaIA');
+                btn.innerHTML = '⏳ Analizando matriz de datos...'; btn.disabled = true; btn.classList.add('opacity-50');
+                resp.classList.remove('hidden'); resp.innerHTML = '<div class="text-center font-bold text-blue-600">🧠 Iniciando motor lógico... Cruzando stock físico vs. tiempos de tránsito internacionales...</div>';
+                try {
+                    const res = await fetch('/admin/inventario/analizar', {method:'POST'});
+                    const data = await res.json();
+                    if(data.success){
+                        // Renderizar negritas de Markdown a HTML
+                        let texto = data.analisis.replace(/\\*\\*(.*?)\\*\\*/g, '<strong class="text-blue-900">$1</strong>').replace(/\\*(.*?)\\*/g, '<em>$1</em>').replace(/\\n/g, '<br>');
+                        resp.innerHTML = '<h3 class="text-lg font-extrabold mb-4 uppercase text-blue-900">📑 Reporte Ejecutivo de Abastecimiento</h3>' + texto;
+                    } else { resp.innerHTML = '❌ Error de procesamiento en la IA.'; }
+                } catch(e) { resp.innerHTML = '❌ Error de conexión al servidor AI.'; }
+                btn.innerHTML = '🧠 Analizar Stock con IA'; btn.disabled = false; btn.classList.remove('opacity-50');
+            }
+        </script></body></html>`;
         res.send(html);
     } catch (e) { res.status(500).send('Error'); }
 });
 
-router.post('/admin/clientes/actualizar', async (req, res) => { 
-    try { 
-        await Usuario.findByIdAndUpdate(req.body.id, { 
-            ciudad: req.body.ciudad,
-            direccion: req.body.direccion,
-            tipo_establecimiento: req.body.tipo_establecimiento,
-            especialidad: req.body.especialidad,
-            cumpleanos: req.body.cumpleanos,
-            etiquetas: req.body.etiquetas, 
-            notas: req.body.notas 
-        }); 
-        res.json({ success: true }); 
-    } catch (e) { res.json({ success: false }); } 
+router.post('/admin/inventario/actualizar', async (req, res) => {
+    try {
+        await Producto.findByIdAndUpdate(req.body.id, { stock_actual: req.body.stock_actual, stock_seguridad: req.body.stock_seguridad, lead_time_dias: req.body.lead_time_dias });
+        res.json({success:true});
+    } catch(e) { res.json({success:false}); }
 });
 
-// 8. RESTO DE RUTAS ESTÁNDAR (Proforma, Dashboard, Catálogo, Pedidos, Estados)
+router.post('/admin/inventario/analizar', async (req, res) => {
+    try {
+        const prod = await Producto.find().sort({ categoria: 1 });
+        let datosInventario = prod.map(p => `- [SKU: ${p.codigo}] ${p.nombre} | Stock Físico: ${p.stock_actual} | Stock Seguridad Mínimo: ${p.stock_seguridad} | Tránsito desde Alemania: ${p.lead_time_dias} días`).join('\n');
+        
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); 
+        
+        const prompt = `Eres el Gerente Experto de Supply Chain e IA Corporativa de Forestadent Ecuador (distribuidor B2B de ortodoncia).
+        Actúas como asesor logístico directo para Néstor Bernal (CEO/Gerente).
+        
+        Aquí tienes la matriz actual de inventario:
+        ${datosInventario}
+        
+        Instrucciones estrictas:
+        1. Identifica de inmediato qué referencias están en estado CRÍTICO (stock actual por debajo o igual al stock de seguridad).
+        2. Advierte los riesgos considerando los "días de tránsito". Si el stock es bajo y el tránsito es largo, la urgencia es máxima.
+        3. Redacta una sugerencia de ORDEN DE COMPRA (Purchase Order) clara, calculando cuántas unidades pedir a Casa Matriz (Alemania) para salir de la zona de riesgo y cubrir la venta del próximo trimestre.
+        4. Tono: Directo, corporativo, B2B y muy analítico. No uses saludos genéricos ni te despidas afectuosamente. Ve directo a los datos y la estrategia. Usa Markdown (negritas) para los números y SKUs importantes.`;
+
+        const result = await model.generateContent(prompt);
+        res.json({ success: true, analisis: result.response.text() });
+    } catch (e) { console.error(e); res.json({ success: false }); }
+});
+
+
+// 5. RESTO DE RUTAS ESTÁNDAR COMPACTADAS (Broadcast, CRM, Proforma, Dashboard, etc)
+router.get('/admin/broadcast', async (req, res) => { try { const clientes = await Usuario.find().sort({ nombre_whatsapp: 1 }); const historialCampanas = await Campana.find().sort({ fecha_envio: -1 }); const tickets = await Ticket.find().sort({ fecha_emision: -1 }); let listaCheckboxes = ''; clientes.forEach(c => { listaCheckboxes += `<label class="flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg cursor-pointer"><input type="checkbox" value="${c.telefono}" class="checkbox-manual w-5 h-5 text-green-600 rounded"><span class="text-sm font-bold text-forestaBlack">${c.nombre_whatsapp} <span class="text-gray-400 font-medium ml-1">(+${c.telefono})</span></span></label>`; }); let filasHistorial = ''; historialCampanas.forEach(camp => { let fechaEvt = camp.fecha_evento ? new Date(camp.fecha_evento).toLocaleString('es-EC') : 'Sin fecha'; filasHistorial += `<tr class="border-b"><td class="p-4 text-xs font-medium text-gray-500">${fechaEvt}</td><td class="p-4 font-bold text-forestaBlack">${camp.nombre_campana}</td><td class="p-4 text-center font-bold">${camp.metricas_enviados}</td><td class="p-4 text-center font-bold text-blue-600 bg-blue-50">${camp.metricas_info}</td><td class="p-4 text-center font-bold text-yellow-600 bg-yellow-50">${camp.metricas_reservas}</td><td class="p-4 text-center font-bold text-green-600 bg-green-50">${camp.metricas_pagos}</td></tr>`; }); let filasAsistencia = ''; tickets.forEach(t => { let estado = t.asistencia_confirmada ? '<span class="text-green-600 font-bold bg-green-100 px-3 py-1 rounded-full text-xs">🟢 Asistió</span>' : '<span class="text-red-500 font-bold bg-red-100 px-3 py-1 rounded-full text-xs">🔴 Ausente</span>'; filasAsistencia += `<tr class="border-b hover:bg-gray-50"><td class="p-4 text-xs font-medium text-gray-500">${new Date(t.fecha_emision).toLocaleDateString('es-EC')}</td><td class="p-4 font-bold text-forestaBlack">${t.nombre_cliente}</td><td class="p-4 font-bold text-gray-700">${t.nombre_evento}</td><td class="p-4 text-sm font-medium text-gray-500">${t.id_unico}</td><td class="p-4 text-center">${estado}</td></tr>`; }); let html = `<!DOCTYPE html><html><head><title>Campañas</title>${htmlHead}</head><body class="bg-gray-50 p-8"><div class="max-w-7xl mx-auto">${menuNavegacion}<div class="bg-white p-8 rounded-xl shadow border-l-8 border-green-600 mb-8"><h2 class="text-2xl font-extrabold mb-2 uppercase">📢 Gestor de Campañas</h2><div class="grid grid-cols-2 gap-8"><div><label class="block text-sm font-bold uppercase mb-2">1. Público</label><select id="tipoFiltro" onchange="mostrarOpcionFiltro()" class="w-full border p-3 rounded mb-4 font-bold"><option value="todos">🌍 TODOS</option><option value="establecimiento">🏥 Por Establecimiento</option><option value="etiqueta">🏷️ Por Etiqueta</option><option value="manual">🎯 Manual</option></select><div id="cajaValorEstablecimiento" class="hidden mb-4"><select id="valorEstablecimiento" class="w-full border p-3 rounded"><option value="consultorio">Consultorio</option><option value="clínica">Clínica</option></select></div><div id="cajaValorEtiqueta" class="hidden mb-4"><input type="text" id="valorEtiqueta" placeholder="Ej: VIP" class="w-full border p-3 rounded"></div><div id="cajaValorManual" class="hidden mb-4"><div class="border rounded p-4 max-h-60 overflow-y-auto">${listaCheckboxes}</div></div><label class="block text-sm font-bold uppercase mb-2 mt-4">2. Estructura</label><input type="text" id="nombreCampana" placeholder="Nombre interno" class="w-full border p-3 font-bold mb-3"><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Fecha y Hora del Evento:</label><input type="datetime-local" id="fechaEventoCampana" class="w-full border p-3 font-bold mb-3 bg-gray-50"><input type="text" id="linkCampana" placeholder="🔗 Enlace del PDF" class="w-full border p-3 mb-3"><textarea id="bancoCampana" rows="2" placeholder="🏦 Datos Bancarios" class="w-full border p-3 mb-3"></textarea><label class="block text-sm font-bold uppercase mb-2">3. Mensaje</label><textarea id="mensajeCampana" rows="5" placeholder="Escribe tu mensaje..." class="w-full border p-4 mb-4"></textarea><button onclick="disparar()" id="btnEnviar" class="w-full bg-green-600 text-white font-bold py-4 rounded uppercase">🚀 Lanzar</button><p id="textoCarga" class="text-green-600 font-bold mt-4 text-center hidden">⏳ Enviando...</p></div><div class="bg-gray-100 p-6 rounded-xl flex flex-col items-center"><p class="text-xs font-bold mb-4 uppercase">Vista Previa</p><div class="bg-white p-5 rounded-xl shadow w-full"><p class="text-sm font-medium mb-4">🦷 ¡Hola! ✨</p><p id="vistaPrevia" class="text-sm font-bold">[Oferta]</p><p class="text-sm font-medium mt-4 italic">👉 Para más información responde INFO.</p></div></div></div></div><div class="bg-white p-8 rounded-xl shadow mb-8"><h2 class="text-xl font-extrabold mb-6 uppercase">📊 Historial</h2><table class="w-full text-left"><thead><tr class="bg-forestaBlack text-white text-xs uppercase"><th class="p-4">Fecha Evento</th><th class="p-4">Campaña</th><th class="p-4">Enviados</th><th class="p-4">INFO</th><th class="p-4">Reservas</th><th class="p-4">Pagos</th></tr></thead><tbody>${filasHistorial||'<tr><td colspan="6" class="text-center p-4">Nada aún.</td></tr>'}</tbody></table></div><div class="bg-white p-8 rounded-xl shadow"><div class="flex justify-between items-center mb-6"><h2 class="text-xl font-extrabold uppercase">🎓 Asistencia</h2><button onclick="exportarTablaDiplomas()" class="bg-blue-900 text-white font-bold py-2 px-4 rounded text-sm">📥 Exportar</button></div><table id="tablaDiplomas" class="w-full text-left"><thead><tr class="bg-forestaBlack text-white text-xs uppercase"><th class="p-4">Emisión</th><th class="p-4">Doctor</th><th class="p-4">Evento</th><th class="p-4">Ticket</th><th class="p-4">Estado</th></tr></thead><tbody>${filasAsistencia||'<tr><td colspan="5" class="text-center p-4">Vacio</td></tr>'}</tbody></table></div></div><script>document.getElementById('mensajeCampana').addEventListener('input', function(e) { let t = e.target.value || '[Oferta]'; t = t.replace(/\\*(.*?)\\*/g, '<strong>$1</strong>'); t = t.replace(/_(.*?)_/g, '<em>$1</em>'); document.getElementById('vistaPrevia').innerHTML = t; }); function mostrarOpcionFiltro() { const f = document.getElementById('tipoFiltro').value; ['Establecimiento','Etiqueta','Manual'].forEach(id => document.getElementById('cajaValor'+id).classList.add('hidden')); if(f!=='todos') document.getElementById('cajaValor'+f.charAt(0).toUpperCase()+f.slice(1)).classList.remove('hidden'); } async function disparar() { const nombre = document.getElementById('nombreCampana').value; const fecha_evento = document.getElementById('fechaEventoCampana').value; const enlace = document.getElementById('linkCampana').value; const banco = document.getElementById('bancoCampana').value; const mensaje = document.getElementById('mensajeCampana').value; const filtro = document.getElementById('tipoFiltro').value; let valorFiltro = ''; let telefonosManuales = []; if (filtro === 'establecimiento') valorFiltro = document.getElementById('valorEstablecimiento').value; if (filtro === 'etiqueta') valorFiltro = document.getElementById('valorEtiqueta').value; if (filtro === 'manual') { document.querySelectorAll('.checkbox-manual:checked').forEach(cb => telefonosManuales.push(cb.value)); if (telefonosManuales.length === 0) return alert("Selecciona doctor."); } if (!nombre.trim() || !mensaje.trim()) return alert("Faltan datos."); if (!confirm('¿Lanzar campaña?')) return; document.getElementById('btnEnviar').classList.add('hidden'); document.getElementById('textoCarga').classList.remove('hidden'); try { const res = await fetch('/admin/broadcast/enviar', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ nombre, fecha_evento, enlace, banco, mensaje, filtro, valorFiltro, telefonosManuales }) }); const result = await res.json(); if(result.success){ alert('✅ ¡Disparada!'); window.location.reload(); } else { alert('❌ ERROR META:\\n'+result.error_meta); window.location.reload(); } } catch(e){ alert('Error'); } } function exportarTablaDiplomas() { let wb = XLSX.utils.table_to_book(document.getElementById("tablaDiplomas")); XLSX.writeFile(wb, "Reporte.xlsx"); }</script></body></html>`; res.send(html); } catch (e) { res.status(500).send("Error."); } });
+router.post('/admin/broadcast/enviar', async (req, res) => { try { const { nombre, fecha_evento, enlace, banco, mensaje, filtro, valorFiltro, telefonosManuales } = req.body; let query = {}; if (filtro === 'establecimiento') query = { tipo_establecimiento: valorFiltro }; else if (filtro === 'etiqueta') query = { etiquetas: { $regex: valorFiltro, $options: 'i' } }; else if (filtro === 'manual') query = { telefono: { $in: telefonosManuales } }; const destinatarios = await Usuario.find(query); if (destinatarios.length === 0) return res.json({ success: false, error_meta: "Nadie encontrado." }); const nuevaCampana = new Campana({ nombre_campana: nombre, fecha_evento: fecha_evento ? new Date(fecha_evento) : null, mensaje_cuerpo: mensaje, enlace_pdf: enlace, datos_bancarios: banco, metricas_enviados: destinatarios.length }); await nuevaCampana.save(); let errores = []; for (const dest of destinatarios) { const saludo = `🦷 *¡Hola ${dest.nombre_whatsapp}! Espero que tengas un excelente día.* ✨\n\n`; const pie = `\n\n👉 _Para más información o reservar tu cupo, responde a este mensaje con la palabra *INFO*._`; const msjFinal = saludo + mensaje.replace(/{{nombre}}/gi, dest.nombre_whatsapp) + pie; await Usuario.findByIdAndUpdate(dest._id, { notas: (dest.notas || '')+`\n[📢 ${new Date().toLocaleDateString('es-EC')}]: ${nombre}`, ultima_campana: nuevaCampana._id }); const metaRes = await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', to: dest.telefono, type: 'text', text: { body: msjFinal } }) }); const metaData = await metaRes.json(); if (metaData.error) errores.push(`Bloqueado +${dest.telefono}: ${metaData.error.message}`); await new Promise(r => setTimeout(r, 500)); } if (errores.length > 0) res.json({ success: false, error_meta: errores[0] }); else res.json({ success: true, intentos: destinatarios.length }); } catch (e) { res.json({ success: false, error_meta: "Error." }); } });
+router.get('/admin/clientes', async (req, res) => { try { const clRaw = await Usuario.find().sort({ fecha_registro: -1 }); const clientes = await Promise.all(clRaw.map(async (c) => { const uPed = await Solicitud.findOne({ telefono_cliente: c.telefono, tipo_solicitud: 'pedido' }).sort({ fecha: -1 }); let dias = 999; if (uPed) dias = Math.ceil(Math.abs(new Date() - new Date(uPed.fecha)) / 86400000); let sem = '🔴 Inactivo'; let col = 'bg-red-100 text-red-700'; if (dias <= 15) { sem = '🟢 Activo'; col = 'bg-green-100 text-green-700'; } else if (dias <= 30) { sem = '🟡 Enfriándose'; col = 'bg-yellow-100 text-yellow-700'; } return { ...c.toObject(), sem, col, dias }; })); let html = `<!DOCTYPE html><html><head><title>CRM Ficha Profesional</title>${htmlHead}</head><body class="bg-gray-50 p-8"><div class="max-w-7xl mx-auto">${menuNavegacion}<div class="bg-white rounded-xl shadow overflow-x-auto"><table class="w-full text-left"><thead><tr class="bg-forestaBlack text-white text-xs uppercase"><th class="p-4">Actividad</th><th class="p-4">Doctor</th><th class="p-4">Ubicación / Dir</th><th class="p-4">Especialidad</th><th class="p-4">Notas</th><th class="p-4 text-center">Acción</th></tr></thead><tbody class="divide-y">`; clientes.forEach(c => { html += `<tr><td class="p-4"><span class="px-2 py-1 text-xs font-bold rounded ${c.col}">${c.sem}</span></td><td class="p-4 font-bold">${c.nombre_whatsapp}<br><span class="text-xs text-gray-500">+${c.telefono}</span><br><input type="text" id="cumple_${c._id}" value="${c.cumpleanos||''}" placeholder="Cumple" class="border p-1 text-xs mt-1 w-24 rounded"></td><td class="p-4"><input type="text" id="ciudad_${c._id}" value="${c.ciudad||'Quito'}" placeholder="Ciudad" class="border p-1 text-xs mb-1 w-full rounded font-bold"><input type="text" id="dir_${c._id}" value="${c.direccion||''}" placeholder="Dir" class="border p-1 text-xs w-full rounded"><select id="lugar_${c._id}" class="border p-1 text-xs mt-1 w-full rounded bg-gray-50"><option value="consultorio" ${c.tipo_establecimiento==='consultorio'?'selected':''}>Consultorio</option><option value="clínica" ${c.tipo_establecimiento==='clínica'?'selected':''}>Clínica</option></select></td><td class="p-4"><input type="text" id="esp_${c._id}" value="${c.especialidad||'Ortodoncia'}" class="border p-1 text-xs w-full rounded font-semibold"></td><td class="p-4"><input id="etiq_${c._id}" value="${c.etiquetas||''}" placeholder="Etiquetas" class="border p-1 text-xs w-full rounded mb-1"><textarea id="notas_${c._id}" placeholder="Notas..." class="border p-1 text-xs w-full rounded" rows="2">${c.notas||''}</textarea></td><td class="p-4 text-center"><button onclick="guardar('${c._id}')" class="bg-forestaGold text-white text-xs font-bold px-4 py-2 rounded shadow">Guardar</button></td></tr>`; }); html += `</tbody></table></div></div><script>async function guardar(id) { const data = { id, ciudad: document.getElementById('ciudad_'+id).value, direccion: document.getElementById('dir_'+id).value, tipo_establecimiento: document.getElementById('lugar_'+id).value, especialidad: document.getElementById('esp_'+id).value, cumpleanos: document.getElementById('cumple_'+id).value, etiquetas: document.getElementById('etiq_'+id).value, notas: document.getElementById('notas_'+id).value }; await fetch('/admin/clientes/actualizar', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) }); alert('✅ Ficha actualizada'); }</script></body></html>`; res.send(html); } catch (e) { res.status(500).send('Error'); } });
+router.post('/admin/clientes/actualizar', async (req, res) => { try { await Usuario.findByIdAndUpdate(req.body.id, { ciudad: req.body.ciudad, direccion: req.body.direccion, tipo_establecimiento: req.body.tipo_establecimiento, especialidad: req.body.especialidad, cumpleanos: req.body.cumpleanos, etiquetas: req.body.etiquetas, notas: req.body.notas }); res.json({ success: true }); } catch (e) { res.json({ success: false }); } });
 router.get('/proforma/:id', async (req, res) => { try { const s = await Solicitud.findById(req.params.id); if (!s || s.tipo_solicitud !== 'cotizacion') return res.status(404).send('No encontrada.'); const f = new Date(s.fecha).toLocaleDateString('es-EC'); const n = s._id.toString().slice(-6).toUpperCase(); let t = s.contenido_texto.replace(/[*_~]/g, ''); let h = `<!DOCTYPE html><html><head><title>Proforma</title>${htmlHead}</head><body class="bg-gray-100 p-8"><div id="pdf" class="bg-white p-12 rounded-xl max-w-3xl mx-auto border-t-8 border-forestaGold"><div class="flex justify-between border-b-2 pb-6"><img src="/logo-vector-forestadent.webp" class="h-16" onerror="this.style.display='none'"><div class="text-right"><h1 class="text-2xl font-extrabold uppercase">Proforma</h1><p class="text-sm font-bold text-forestaGold">DOC-${n}</p></div></div><div class="grid grid-cols-2 gap-6 mb-8 mt-6"><div><p class="text-xs font-bold text-gray-400">Cliente:</p><p class="text-lg font-bold">${s.nombre_cliente}</p><p class="text-sm text-gray-500">+${s.telefono_cliente}</p></div><div class="text-right"><p class="text-xs font-bold text-gray-400">Fecha:</p><p class="font-bold">${f}</p></div></div><div class="bg-gray-50 p-8 rounded-xl border"><pre class="font-sans whitespace-pre-wrap font-medium">${t}</pre></div><div class="text-center mt-6 pt-6 border-t-2"><p class="text-xs font-bold text-gray-400">Generado por IA • Forestadent B2B</p></div></div><div class="text-center mt-8 hide-on-print"><button onclick="html2pdf().set({margin:10, filename:'Proforma_${n}.pdf'}).from(document.getElementById('pdf')).save()" class="bg-forestaBlack text-white font-bold py-3 px-6 rounded">📥 Descargar PDF</button></div><style>@media print { .hide-on-print { display: none !important; } }</style></body></html>`; res.send(h); } catch (e) { res.status(500).send("Error"); } });
 router.get('/admin/dashboard', async (req, res) => { try { const t = await Usuario.countDocuments(); const s = await Solicitud.find(); const p = s.filter(x => x.tipo_solicitud === 'pedido'); const c = s.filter(x => x.tipo_solicitud === 'cotizacion'); const pp = p.filter(x => x.estado_atencion === 'pendiente').length; const pd = p.filter(x => x.estado_atencion === 'despachado').length; const cn = c.filter(x => x.estado_atencion === 'cotizado').length; const ca = c.filter(x => x.estado_atencion === 'recordatorio_enviado').length; let h = `<!DOCTYPE html><html><head><title>Dashboard</title>${htmlHead}</head><body class="bg-gray-50 p-8"><div class="max-w-7xl mx-auto">${menuNavegacion}<div class="grid grid-cols-4 gap-6 mb-8"><div class="bg-white p-6 rounded-xl border-l-4 border-forestaBlack"><p class="text-xs font-bold text-gray-500 uppercase">Directorio</p><h3 class="text-3xl font-extrabold">${t}</h3></div><div class="bg-white p-6 rounded-xl border-l-4 border-yellow-400"><p class="text-xs font-bold text-gray-500 uppercase">Pendientes</p><h3 class="text-3xl font-extrabold">${pp}</h3></div><div class="bg-white p-6 rounded-xl border-l-4 border-green-500"><p class="text-xs font-bold text-gray-500 uppercase">Despachados</p><h3 class="text-3xl font-extrabold">${pd}</h3></div><div class="bg-white p-6 rounded-xl border-l-4 border-forestaGold"><p class="text-xs font-bold text-gray-500 uppercase">Proformas</p><h3 class="text-3xl font-extrabold">${c.length}</h3></div></div><div class="grid grid-cols-2 gap-8 mb-8"><div class="bg-white p-6 rounded-xl"><h3 class="font-bold mb-4">Logística</h3><canvas id="gOp"></canvas></div><div class="bg-white p-6 rounded-xl"><h3 class="font-bold mb-4">Embudo</h3><canvas id="gVen"></canvas></div></div></div><script>new Chart(document.getElementById('gOp'), { type: 'pie', data: { labels: ['Pendientes', 'Despachados'], datasets: [{ data: [${pp}, ${pd}], backgroundColor: ['#FCD34D', '#34D399'] }] }}); new Chart(document.getElementById('gVen'), { type: 'bar', data: { labels: ['Nuevas', 'Avisadas'], datasets: [{ data: [${cn}, ${ca}], backgroundColor: ['#B4975A', '#1E3A8A'] }] }});</script></body></html>`; res.send(h); } catch (e) { res.status(500).send('Error'); } });
 router.get('/admin/catalogo', async (req, res) => { try { const prod = await Producto.find().sort({ categoria: 1, nombre: 1 }); let html = `<!DOCTYPE html><html><head><title>Catálogo</title>${htmlHead}</head><body class="bg-gray-50 p-8"><div class="max-w-7xl mx-auto">${menuNavegacion}<div class="bg-white p-6 rounded-xl shadow mb-8"><h2 class="font-bold mb-4">Agregar Producto</h2><div class="flex gap-4"><input id="n_cod" placeholder="SKU" class="border p-2"><input id="n_nom" placeholder="Nombre" class="border p-2 w-full"><input id="n_cat" placeholder="Categoría" class="border p-2"><input id="n_pre" placeholder="Precio" type="number" step="0.01" class="border p-2"><button onclick="add()" class="bg-forestaBlack text-white px-4 py-2 font-bold rounded">Add</button></div></div><div class="bg-white rounded-xl shadow"><table class="w-full text-left"><thead><tr class="bg-forestaBlack text-white text-xs uppercase"><th class="p-4">SKU</th><th class="p-4">Nombre</th><th class="p-4">Categoría</th><th class="p-4">Precio</th><th class="p-4">Acciones</th></tr></thead><tbody>`; prod.forEach(p => { html += `<tr><td class="p-4 font-bold text-gray-500">${p.codigo}</td><td class="p-4 font-bold">${p.nombre}</td><td class="p-4">${p.categoria}</td><td class="p-4"><input id="p_${p._id}" value="${p.precio.toFixed(2)}" class="border w-20 p-1"></td><td class="p-4"><button onclick="edit('${p._id}')" class="bg-forestaGold text-white px-2 py-1 rounded text-xs mr-2">Guardar</button><button onclick="del('${p._id}')" class="bg-red-500 text-white px-2 py-1 rounded text-xs">X</button></td></tr>`; }); html += `</tbody></table></div></div><script>async function add(){ await fetch('/admin/catalogo/agregar', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({codigo:document.getElementById('n_cod').value, nombre:document.getElementById('n_nom').value, categoria:document.getElementById('n_cat').value, precio:document.getElementById('n_pre').value, empaque:'Unidad'})}); window.location.reload(); } async function edit(id){ await fetch('/admin/catalogo/editar', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, precio:document.getElementById('p_'+id).value})}); alert('OK'); } async function del(id){ await fetch('/admin/catalogo/eliminar', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id})}); window.location.reload(); }</script></body></html>`; res.send(html); } catch (e) { res.status(500).send('Error'); } });
 router.get('/admin', async (req, res) => { try { const solicitudes = await Solicitud.find().sort({ fecha: -1 }); let html = `<!DOCTYPE html><html><head><title>Pedidos</title>${htmlHead}</head><body class="bg-gray-50 p-8"><div class="max-w-7xl mx-auto">${menuNavegacion}<div class="bg-white p-4 rounded-xl shadow mb-6 flex gap-4"><input type="text" id="buscador" onkeyup="filtrarTabla()" placeholder="🔍 Buscar..." class="border p-3 w-full rounded"><select id="filtroTipo" onchange="filtrarTabla()" class="border p-3 rounded font-bold"><option value="todos">📋 Todos</option><option value="pedido">📦 Pedidos</option><option value="cotizacion">💬 Proformas</option><option value="validacion_pago">💰 Pagos</option></select></div><div class="bg-white rounded-xl shadow overflow-hidden"><table class="w-full text-left"><thead><tr class="bg-forestaBlack text-white uppercase text-xs"><th class="p-4">Fecha</th><th class="p-4">Cliente</th><th class="p-4">Detalle</th><th class="p-4 text-center">Estado</th><th class="p-4 text-center">Acción</th></tr></thead><tbody class="divide-y">`; solicitudes.forEach(sol => { let fecha = new Date(sol.fecha).toLocaleString('es-EC'); let cont = `<div class="text-sm whitespace-pre-wrap">${sol.contenido_texto}</div>`; if(sol.tipo_solicitud === 'pedido') { try { let pr = JSON.parse(sol.contenido_texto); cont = '<ul class="list-disc pl-5 text-sm">'; pr.forEach(i => { cont += `<li><strong>${i.cantidad}</strong> x ${i.producto}</li>`; }); cont += '</ul>'; } catch (e) {} } let color = sol.estado_atencion === 'pendiente' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-500'; if(sol.estado_atencion === 'despachado' || sol.estado_atencion === 'pago_aprobado') color = 'bg-green-100 text-green-800'; let btn = ''; if (sol.tipo_solicitud === 'validacion_pago' && sol.estado_atencion === 'pendiente') { btn = `<button onclick="aprobarPago('${sol._id}', '${sol.id_campana_relacionada}')" class="bg-green-600 text-white text-xs font-bold px-4 py-2 rounded shadow">✅ Aprobar Pago (QR)</button>`; } else if (sol.estado_atencion === 'pendiente' && sol.tipo_solicitud === 'pedido') { btn = `<button onclick="act('${sol._id}', 'despachado')" class="bg-forestaBlack text-white text-xs font-bold px-4 py-2 rounded shadow">📦 Despachar</button>`; } else if (sol.estado_atencion === 'pendiente') { btn = `<button onclick="act('${sol._id}', 'despachado')" class="bg-gray-300 text-gray-700 text-xs font-bold px-4 py-2 rounded">✔️ Cerrar</button>`; } else { btn = `<span class="text-xs text-gray-400 font-bold uppercase">✔️ Listo</span>`; } html += `<tr class="fila-dato" data-tipo="${sol.tipo_solicitud}"><td class="p-4 text-sm text-gray-500">${fecha}</td><td class="p-4 font-bold">${sol.nombre_cliente}<br><span class="text-xs font-normal">+${sol.telefono_cliente}</span></td><td class="p-4">${cont}</td><td class="p-4 text-center"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${color}">${sol.estado_atencion.replace('_',' ')}</span></td><td class="p-4 text-center">${btn}</td></tr>`; }); html += `</tbody></table></div></div><script>function filtrarTabla() { let txt = document.getElementById('buscador').value.toLowerCase(); let tipo = document.getElementById('filtroTipo').value; document.querySelectorAll('.fila-dato').forEach(f => { let show = f.innerText.toLowerCase().includes(txt) && (tipo==='todos'||f.dataset.tipo===tipo); f.style.display = show ? '' : 'none'; }); } async function act(id, est) { await fetch('/admin/estado', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id, estado:est}) }); window.location.reload(); } async function aprobarPago(idSol, idCamp) { if(!confirm('¿Aprobar pago y generar Ticket VIP?')) return; await fetch('/admin/pago/aprobar', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id_solicitud: idSol, id_campana: idCamp }) }); window.location.reload(); }</script></body></html>`; res.send(html); } catch (e) { res.status(500).send('Error.'); } });
-
 router.post('/admin/catalogo/editar', async (req, res) => { try { await Producto.findByIdAndUpdate(req.body.id, { precio: req.body.precio }); res.json({ success: true }); } catch (e) { res.json({ success: false }); } });
 router.post('/admin/catalogo/agregar', async (req, res) => { try { await new Producto(req.body).save(); res.json({ success: true }); } catch (e) { res.json({ success: false }); } });
 router.post('/admin/catalogo/eliminar', async (req, res) => { try { await Producto.findByIdAndDelete(req.body.id); res.json({ success: true }); } catch (e) { res.json({ success: false }); } });

@@ -29,15 +29,33 @@ const solicitudSchema = new mongoose.Schema({
 });
 const Solicitud = mongoose.model('Solicitud', solicitudSchema);
 
-// 3. CATÁLOGO DE PRODUCTOS
+// 3. CATÁLOGO DE PRODUCTOS E INTELIGENCIA DE INVENTARIO
 const productoSchema = new mongoose.Schema({
     codigo: String,
     nombre: String,
     categoria: String,
     precio: Number,
-    empaque: String
+    empaque: String,
+    // 🚨 NUEVOS CAMPOS LOGÍSTICOS PARA LA IA
+    stock_actual: { type: Number, default: 0 }, 
+    stock_seguridad: { type: Number, default: 10 }, // Lo mínimo que deberías tener antes de entrar en pánico
+    lead_time_dias: { type: Number, default: 30 } // Días que tarda Casa Matriz (Alemania/Francia) en despacharte
 });
 const Producto = mongoose.model('Producto', productoSchema);
+
+
+// FUNCIÓN DE INICIO (Actualizada con stock inicial)
+const productosIniciales = [
+    { codigo: "202-3743", nombre: "Arco acero recto superior .017x.025", categoria: "Arcos", precio: 1.00, empaque: "Paquete de 10 unidades", stock_actual: 50, stock_seguridad: 15, lead_time_dias: 30 },
+    { codigo: "202-3843", nombre: "Arco acero recto inferior .017x.025", categoria: "Arcos", precio: 1.00, empaque: "Paquete de 10 unidades", stock_actual: 12, stock_seguridad: 15, lead_time_dias: 30 }
+];
+
+async function inicializarCatalogo() {
+    try {
+        const conteo = await Producto.countDocuments();
+        if (conteo === 0) await Producto.insertMany(productosIniciales);
+    } catch (error) { console.error("Error inicializando catálogo:", error); }
+}
 
 // 4. HISTORIAL DE CAMPAÑAS Y MÉTRICAS
 const campanaSchema = new mongoose.Schema({
