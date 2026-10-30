@@ -74,7 +74,7 @@ router.post('/admin/pago/aprobar', async (req, res) => {
     } catch (e) { res.json({ success: false }); }
 });
 
-// 4. INVENTARIO E IA CON EXPORTACIÓN NATIVA (INFALIBLE)
+// 4. INVENTARIO E IA CON EXPORTACIÓN NATIVA
 router.get('/admin/inventario', async (req, res) => {
     try {
         const prod = await Producto.find().sort({ categoria: 1, nombre: 1 });
@@ -243,16 +243,85 @@ router.get('/proforma/:id', async (req, res) => {
     } catch (e) { res.status(500).send("Error"); } 
 });
 
+// 🚨 AQUÍ INTEGRAMOS EL "BOTÓN CAZADOR" EN LA TABLA PRINCIPAL
 router.get('/admin', async (req, res) => {
     try {
         const sol = await Solicitud.find().sort({ fecha: -1 });
-        let filas = sol.map(s => `<tr class="border-b"><td class="p-4 text-sm">${new Date(s.fecha).toLocaleDateString()}</td><td class="p-4 font-bold">${s.nombre_cliente}</td><td class="p-4 uppercase text-xs">${s.tipo_solicitud}</td><td class="p-4 uppercase text-xs font-bold text-gray-500">${s.estado_atencion.replace('_',' ')}</td><td class="p-4"><button onclick="act('${s._id}')" class="bg-black text-white px-4 py-2 text-xs rounded">Cerrar Tarea</button></td></tr>`).join('');
-        res.send(`<!DOCTYPE html><html><head>${htmlHead}</head><body class="bg-gray-50 p-8"><div class="max-w-7xl mx-auto">${menuNavegacion}<div class="bg-white rounded-xl shadow"><table class="w-full text-left"><thead><tr class="bg-forestaBlack text-white text-xs uppercase"><th class="p-4">Fecha</th><th class="p-4">Cliente</th><th class="p-4">Tipo</th><th class="p-4">Estado</th><th class="p-4">Acción</th></tr></thead><tbody>${filas}</tbody></table></div><script>async function act(id){ await fetch('/admin/estado', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, estado:'despachado'})}); location.reload(); }</script></div></body></html>`);
+        let filas = sol.map(s => {
+            let btn = '';
+            
+            // Lógica de botones según el estado
+            if (s.tipo_solicitud === 'cotizacion' && (s.estado_atencion === 'pendiente' || s.estado_atencion === 'cotizado')) {
+                // Botón Cazador para proformas abandonadas
+                btn = `<button onclick="cazar('${s._id}')" class="bg-forestaGold text-white text-xs font-bold px-4 py-2 rounded shadow mb-1 w-full hover:bg-yellow-600 transition">🎯 Cazador (Seguimiento)</button><br>
+                       <button onclick="act('${s._id}', 'cerrado')" class="bg-gray-300 text-gray-700 text-xs font-bold px-4 py-2 rounded w-full">✔️ Cerrar</button>`;
+            } else if (s.tipo_solicitud === 'pedido' && s.estado_atencion === 'pendiente') {
+                btn = `<button onclick="act('${s._id}', 'despachado')" class="bg-forestaBlack text-white text-xs font-bold px-4 py-2 rounded shadow w-full">📦 Despachar</button>`;
+            } else {
+                btn = `<span class="text-xs text-gray-400 font-bold uppercase block text-center">✔️ ${s.estado_atencion.replace('_', ' ')}</span>`;
+            }
+
+            return `<tr class="border-b hover:bg-gray-50">
+                        <td class="p-4 text-sm text-gray-500">${new Date(s.fecha).toLocaleDateString()}</td>
+                        <td class="p-4 font-bold text-gray-800">${s.nombre_cliente}<br><span class="text-xs text-gray-400 font-normal">+${s.telefono_cliente}</span></td>
+                        <td class="p-4 uppercase text-xs font-bold text-blue-600">${s.tipo_solicitud}</td>
+                        <td class="p-4"><div class="flex flex-col gap-1 w-32">${btn}</div></td>
+                    </tr>`;
+        }).join('');
+
+        res.send(`<!DOCTYPE html><html><head>${htmlHead}</head><body class="bg-gray-50 p-8"><div class="max-w-7xl mx-auto">${menuNavegacion}
+        <div class="bg-white rounded-xl shadow border-t-8 border-forestaBlack overflow-hidden"><table class="w-full text-left">
+        <thead><tr class="bg-gray-100 text-gray-600 text-xs uppercase"><th class="p-4">Fecha</th><th class="p-4">Cliente</th><th class="p-4">Tipo</th><th class="p-4">Acción</th></tr></thead>
+        <tbody>${filas}</tbody></table></div>
+        
+        <script>
+            async function act(id, estado){ 
+                await fetch('/admin/estado', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, estado})}); 
+                location.reload(); 
+            }
+            
+            // Función del Botón Cazador
+            async function cazar(id) {
+                if(!confirm('¿Disparar mensaje corporativo de seguimiento por WhatsApp a este doctor?')) return;
+                try {
+                    const res = await fetch('/admin/solicitud/cazar', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id}) });
+                    const data = await res.json();
+                    if(data.success) { alert('✅ ¡Mensaje de seguimiento enviado exitosamente!'); location.reload(); }
+                    else { alert('❌ Hubo un error al enviar el seguimiento.'); }
+                } catch(e) { alert('❌ Error de conexión.'); }
+            }
+        </script></div></body></html>`);
     } catch(e) { res.status(500).send('Error'); }
 });
 
 router.post('/admin/estado', async (req, res) => {
     try { await Solicitud.findByIdAndUpdate(req.body.id, { estado_atencion: req.body.estado }); res.json({success:true}); } catch(e) { res.json({success:false}); }
+});
+
+// 🚨 NUEVA RUTA BACKEND: ENVÍA EL WHATSAPP DEL CAZADOR
+router.post('/admin/solicitud/cazar', async (req, res) => {
+    try {
+        const sol = await Solicitud.findById(req.body.id);
+        if (!sol) return res.json({ success: false });
+
+        // Armamos el enlace de la proforma
+        const linkPdf = `https://${req.get('host')}/proforma/${sol._id}`;
+        
+        // El texto persuasivo
+        const mensaje = `🦷 *Hola ${sol.nombre_cliente}*, le escribimos de Forestadent. ✨\n\n¿Pudo revisar la cotización que le enviamos recientemente?\n\n👉 Si desea proceder con el pedido, solo responda este mensaje con un *SÍ* y lo preparamos de inmediato.\n\n📄 Puede revisar el detalle corporativo de su cotización aquí: \n${linkPdf}`;
+
+        // Disparamos a WhatsApp Meta
+        await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messaging_product: 'whatsapp', to: sol.telefono_cliente, type: 'text', text: { body: mensaje } })
+        });
+        
+        // Marcamos en base de datos para saber que ya le hicimos retargeting
+        await Solicitud.findByIdAndUpdate(req.body.id, { estado_atencion: 'recordatorio_enviado' });
+        
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false }); }
 });
 
 router.get('/admin/dashboard', (req, res) => res.redirect('/admin'));
