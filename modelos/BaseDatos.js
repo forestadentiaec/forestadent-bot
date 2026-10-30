@@ -1,9 +1,13 @@
 const mongoose = require('mongoose');
 
-// 1. CRM DE CLIENTES
+// 1. CRM DE CLIENTES Y FICHAS PROFESIONALES
 const usuarioSchema = new mongoose.Schema({
     telefono: String,
     nombre_whatsapp: String,
+    ciudad: { type: String, default: 'Quito' }, // 🚨 NUEVO
+    direccion: { type: String, default: '' },   // 🚨 NUEVO
+    especialidad: { type: String, default: 'Ortodoncia' }, // 🚨 NUEVO
+    cumpleanos: { type: String, default: '' },  // 🚨 NUEVO (Ej: 19-May)
     estado_conversacion: { type: String, default: 'inicio' },
     tipo_establecimiento: { type: String, default: 'consultorio' },
     etiquetas: { type: String, default: '' }, 
