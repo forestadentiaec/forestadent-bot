@@ -41,6 +41,8 @@ const campanaSchema = new mongoose.Schema({
     mensaje_cuerpo: String,
     enlace_pdf: String,
     datos_bancarios: String,
+    fecha_evento: { type: Date, default: null }, // 🚨 NUEVO: Fecha y hora en que ocurrirá el evento
+    recordatorio_enviado: { type: Boolean, default: false }, // 🚨 NUEVO: Para saber si ya se mandó la alerta
     fecha_envio: { type: Date, default: Date.now },
     metricas_enviados: { type: Number, default: 0 },
     metricas_info: { type: Number, default: 0 },

@@ -17,6 +17,7 @@ mongoose.connect(process.env.MONGO_URI)
 // 2. Conectar las Rutas (Pantallas y Bot)
 app.use('/', require('./rutas/admin'));
 app.use('/', require('./rutas/bot'));
+app.use('/', require('./rutas/recordatorios'));
 
 // 3. Encender el Servidor
 app.listen(PORT, () => { console.log(`🚀 Motor Modularizado encendido en el puerto ${PORT}`); });
