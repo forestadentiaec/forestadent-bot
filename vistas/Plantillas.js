@@ -1,50 +1,51 @@
-// CONFIGURACIÓN VISUAL BASE (Librerías, Tailwind CSS y Colores Corporativos)
 const htmlHead = `
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Tailwind para el diseño -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js para los gráficos del Dashboard -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- HTML2PDF para generar proformas -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <!-- SheetJS para exportar Excel de los Diplomas -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        forestaBlack: '#111111',
-                        forestaGold: '#B4975A',
-                        forestaGoldHover: '#9A804B'
-                    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    forestaBlack: '#111111',
+                    forestaGold: '#B4975A'
                 }
             }
         }
-    </script>
-    <style>
-        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-    </style>
+    }
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+    body { font-family: 'Inter', sans-serif; }
+    /* Estilos para ocultar elementos al imprimir */
+    @media print {
+        .hide-on-print { display: none !important; }
+    }
+</style>
 `;
 
-// MENÚ DE NAVEGACIÓN SUPERIOR GLOBAL
 const menuNavegacion = `
-    <div class="flex justify-between items-center mb-8 bg-white p-6 rounded-xl shadow-sm border-t-4 border-forestaGold">
-        <div>
-            <h1 class="text-3xl font-extrabold text-forestaBlack tracking-tight uppercase">Torre de Control</h1>
-            <p class="text-gray-500 font-medium text-sm mt-1">Forestadent B2B Ecuador</p>
+<div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center mb-8 gap-4 border-t-4 border-t-forestaGold hide-on-print">
+    
+    <!-- Sección de Logo y Título -->
+    <div class="flex items-center gap-4">
+        <img src="/logo-vector-forestadent.webp" alt="Forestadent" class="h-12 object-contain drop-shadow-sm" onerror="this.style.display='none'">
+        <div class="border-l-2 border-gray-200 pl-4">
+            <h1 class="text-2xl font-extrabold tracking-tight text-forestaBlack uppercase">Torre de Control</h1>
+            <p class="text-[10px] text-gray-500 font-extrabold tracking-widest uppercase">Forestadent B2B Ecuador</p>
         </div>
-        <nav class="flex gap-3">
-            <a href="/admin/dashboard" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-bold text-sm transition shadow-sm">📊 Dashboard</a>
-            <a href="/admin" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-bold text-sm transition shadow-sm">📦 Pedidos</a>
-            <a href="/admin/clientes" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-bold text-sm transition shadow-sm">👥 CRM</a>
-            <a href="/admin/broadcast" class="bg-green-50 hover:bg-green-100 text-green-800 px-4 py-2 rounded-lg font-bold text-sm transition border border-green-200 shadow-sm">📢 Cursos & Broadcast</a>
-            <a href="/admin/inventario" class="bg-blue-50 hover:bg-blue-100 text-blue-800 px-4 py-2 rounded-lg font-bold text-sm transition border border-blue-200 shadow-sm">📦 Inventario IA</a>
-            <a href="/admin/catalogo" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-bold text-sm transition shadow-sm">⚙️ Catálogo</a>
-        </nav>
     </div>
+    
+    <!-- Botonera de Navegación -->
+    <div class="flex flex-wrap gap-2 justify-center">
+        <a href="/admin/dashboard" class="px-3 py-2 rounded-md text-xs font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition shadow-sm">📊 Dashboard</a>
+        <a href="/admin" class="px-3 py-2 rounded-md text-xs font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition shadow-sm">📦 Pedidos</a>
+        <a href="/admin/clientes" class="px-3 py-2 rounded-md text-xs font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition shadow-sm">👥 CRM</a>
+        <a href="/admin/broadcast" class="px-3 py-2 rounded-md text-xs font-bold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 transition shadow-sm">📢 Broadcast</a>
+        <a href="/admin/inventario" class="px-3 py-2 rounded-md text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition shadow-sm">📦 Inventario IA</a>
+        <a href="/admin/catalogo" class="px-3 py-2 rounded-md text-xs font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition shadow-sm">⚙️ Catálogo</a>
+    </div>
+</div>
 `;
 
 module.exports = { htmlHead, menuNavegacion };
