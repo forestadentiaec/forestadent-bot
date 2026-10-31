@@ -28,9 +28,9 @@ const menuNavegacion = `
 <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center mb-8 gap-4 border-t-4 border-t-forestaGold hide-on-print">
     
     <!-- Sección de Logo y Título -->
-    <div class="flex items-center gap-4">
-        <img src="/logo-vector-forestadent.webp" alt="Forestadent" class="h-12 object-contain drop-shadow-sm" onerror="this.style.display='none'">
-        <div class="border-l-2 border-gray-200 pl-4">
+    <div class="flex items-center gap-6">
+        <img src="/logo-vector-forestadent.webp" alt="Forestadent" class="h-20 object-contain drop-shadow-sm" onerror="this.style.display='none'">
+        <div class="border-l-2 border-gray-200 pl-5">
             <h1 class="text-2xl font-extrabold tracking-tight text-forestaBlack uppercase">Torre de Control</h1>
             <p class="text-[10px] text-gray-500 font-extrabold tracking-widest uppercase">Forestadent B2B Ecuador</p>
         </div>
