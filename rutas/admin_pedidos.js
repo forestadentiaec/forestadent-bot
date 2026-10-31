@@ -4,7 +4,9 @@ const QRCode = require('qrcode');
 const { Usuario, Solicitud, Producto, Campana, Ticket } = require('../modelos/BaseDatos');
 const { htmlHead, menuNavegacion } = require('../vistas/Plantillas');
 
-// GENERADOR Y ESCÁNER QR
+// ==========================================
+// 1. GENERADOR Y ESCÁNER QR
+// ==========================================
 router.get('/ticket/qr/:id', async (req, res) => {
     try {
         const urlAprobacion = `https://${req.get('host')}/escanear/${req.params.id}`;
@@ -50,25 +52,174 @@ router.post('/admin/pago/aprobar', async (req, res) => {
     } catch (e) { res.json({ success: false }); }
 });
 
-// DASHBOARD
+// ==========================================
+// 2. DASHBOARD EJECUTIVO (ESTILO POWER BI)
+// ==========================================
 router.get('/admin/dashboard', async (req, res) => {
     try {
         const solicitudes = await Solicitud.find().sort({ fecha: -1 });
         const clientes = await Usuario.find();
         const productos = await Producto.find();
+        
+        // Métricas de Operación
         const totalPedidos = solicitudes.filter(s => s.tipo_solicitud === 'pedido').length;
         const pedidosPendientes = solicitudes.filter(s => s.tipo_solicitud === 'pedido' && s.estado_atencion === 'pendiente').length;
         const totalCotizaciones = solicitudes.filter(s => s.tipo_solicitud === 'cotizacion').length;
         const cotizacionesPendientes = solicitudes.filter(s => s.tipo_solicitud === 'cotizacion' && (s.estado_atencion === 'pendiente' || s.estado_atencion === 'cotizado')).length;
         const pagosPorValidar = solicitudes.filter(s => s.tipo_solicitud === 'validacion_pago' && s.estado_atencion === 'pendiente').length;
-        const productosCriticos = productos.filter(p => (p.stock_actual || 0) <= (p.stock_seguridad || 10));
-        let filasCriticos = productosCriticos.slice(0, 6).map(p => `<tr class="border-b hover:bg-red-50"><td class="p-3 font-bold text-gray-800">${p.codigo}</td><td class="p-3 text-sm text-gray-600">${p.nombre}</td><td class="p-3 text-center font-extrabold text-red-600">${p.stock_actual}</td><td class="p-3 text-center text-xs font-bold text-gray-500">${p.stock_seguridad}</td><td class="p-3 text-right"><span class="bg-red-100 text-red-800 text-xs font-extrabold px-2.5 py-1 rounded-full">🚨 CRÍTICO</span></td></tr>`).join('');
-        let filasRecientes = solicitudes.slice(0, 5).map(s => `<tr class="border-b hover:bg-gray-50"><td class="p-3 text-xs text-gray-500">${new Date(s.fecha).toLocaleDateString('es-EC')}</td><td class="p-3 font-bold text-sm text-gray-800">${s.nombre_cliente}</td><td class="p-3 text-xs font-bold uppercase text-blue-600">${s.tipo_solicitud.replace('_', ' ')}</td><td class="p-3 text-xs font-bold uppercase text-gray-500">${s.estado_atencion.replace('_', ' ')}</td></tr>`).join('');
-        res.send(`<!DOCTYPE html><html><head><title>Dashboard Ejecutivo</title>${htmlHead}</head><body class="bg-gray-50 p-8"><div class="max-w-7xl mx-auto">${menuNavegacion}<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"><div class="bg-white p-6 rounded-xl shadow border-l-8 border-forestaBlack"><p class="text-xs font-bold text-gray-400 uppercase">Pedidos Totales</p><p class="text-3xl font-extrabold text-forestaBlack mt-2">${totalPedidos}</p><p class="text-xs font-bold text-amber-600 mt-2">📦 ${pedidosPendientes} pendientes de despacho</p></div><div class="bg-white p-6 rounded-xl shadow border-l-8 border-forestaGold"><p class="text-xs font-bold text-gray-400 uppercase">Proformas IA</p><p class="text-3xl font-extrabold text-forestaBlack mt-2">${totalCotizaciones}</p><p class="text-xs font-bold text-yellow-700 mt-2">🎯 ${cotizacionesPendientes} listas para Botón Cazador</p></div><div class="bg-white p-6 rounded-xl shadow border-l-8 border-green-600"><p class="text-xs font-bold text-gray-400 uppercase">CRM Doctores</p><p class="text-3xl font-extrabold text-forestaBlack mt-2">${clientes.length}</p><p class="text-xs font-bold text-green-600 mt-2">💳 ${pagosPorValidar} pagos por aprobar</p></div><div class="bg-white p-6 rounded-xl shadow border-l-8 border-red-600"><p class="text-xs font-bold text-gray-400 uppercase">Alertas Stock</p><p class="text-3xl font-extrabold text-red-600 mt-2">${productosCriticos.length}</p><p class="text-xs font-bold text-red-500 mt-2">⚠️ SKUs bajo mínimo</p></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-8"><div class="bg-white p-6 rounded-xl shadow border-t-4 border-red-600"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-extrabold uppercase text-gray-800">🚨 Reposición Urgente</h3><a href="/admin/inventario" class="text-xs font-bold text-blue-600 hover:underline">Ir a Inventario IA →</a></div><table class="w-full text-left"><thead><tr class="bg-gray-100 text-gray-600 text-xs uppercase"><th class="p-3">SKU</th><th class="p-3">Producto</th><th class="p-3 text-center">Actual</th><th class="p-3 text-center">Mínimo</th><th class="p-3 text-right">Estado</th></tr></thead><tbody>${filasCriticos || '<tr><td colspan="5" class="p-4 text-center text-green-600 font-bold">🟢 Todo óptimo</td></tr>'}</tbody></table></div><div class="bg-white p-6 rounded-xl shadow border-t-4 border-forestaBlack"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-extrabold uppercase text-gray-800">⚡ Última Actividad</h3><a href="/admin" class="text-xs font-bold text-blue-600 hover:underline">Ver Pedidos →</a></div><table class="w-full text-left"><thead><tr class="bg-gray-100 text-gray-600 text-xs uppercase"><th class="p-3">Fecha</th><th class="p-3">Doctor</th><th class="p-3">Tipo</th><th class="p-3">Estado</th></tr></thead><tbody>${filasRecientes || '<tr><td colspan="4" class="p-4 text-center text-gray-400">Sin movimientos</td></tr>'}</tbody></table></div></div></div></body></html>`);
+        const totalContactos = solicitudes.filter(s => s.tipo_solicitud === 'contacto').length;
+        const totalPagosVIP = solicitudes.filter(s => s.tipo_solicitud === 'validacion_pago').length;
+
+        // Métricas de Inventario
+        let optimos = 0, reponer = 0, criticos = 0;
+        const productosCriticos = [];
+        
+        productos.forEach(p => {
+            const actual = Number(p.stock_actual || 0);
+            const seg = Number(p.stock_seguridad || 10);
+            if (actual === 0) { criticos++; productosCriticos.push(p); }
+            else if (actual <= seg) { reponer++; productosCriticos.push(p); }
+            else { optimos++; }
+        });
+
+        // Tablas
+        let filasCriticos = productosCriticos.slice(0, 5).map(p => `<tr class="border-b hover:bg-gray-50"><td class="p-3 font-bold text-gray-700 text-xs">${p.codigo}</td><td class="p-3 text-xs text-gray-600 truncate max-w-xs">${p.nombre}</td><td class="p-3 text-center font-extrabold ${p.stock_actual === 0 ? 'text-red-600' : 'text-amber-600'}">${p.stock_actual}</td><td class="p-3 text-right"><span class="${p.stock_actual === 0 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'} text-[10px] font-extrabold px-2 py-1 rounded-sm uppercase tracking-wide">${p.stock_actual === 0 ? 'CRÍTICO' : 'REPONER'}</span></td></tr>`).join('');
+        let filasRecientes = solicitudes.slice(0, 5).map(s => `<tr class="border-b hover:bg-gray-50"><td class="p-3 text-[11px] text-gray-500 font-medium">${new Date(s.fecha).toLocaleDateString('es-EC')}</td><td class="p-3 font-bold text-xs text-gray-800">${s.nombre_cliente}</td><td class="p-3 text-[10px] font-extrabold uppercase tracking-wide text-blue-600">${s.tipo_solicitud.replace('_', ' ')}</td><td class="p-3 text-[10px] font-extrabold uppercase text-gray-500">${s.estado_atencion.replace('_', ' ')}</td></tr>`).join('');
+
+        res.send(`<!DOCTYPE html><html><head><title>Dashboard B2B | Forestadent</title>${htmlHead}
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        </head><body class="bg-gray-100 p-8"><div class="max-w-7xl mx-auto">${menuNavegacion}
+        
+        <!-- TARJETAS KPI SUPERIORES -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-100 border-l-4 border-l-forestaBlack flex flex-col justify-between">
+                <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Pedidos B2B</p>
+                <div class="flex items-baseline gap-2 mt-1"><p class="text-3xl font-extrabold text-gray-800">${totalPedidos}</p></div>
+                <p class="text-xs font-medium text-amber-600 mt-2 bg-amber-50 px-2 py-1 rounded w-fit">📦 ${pedidosPendientes} por despachar</p>
+            </div>
+            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-100 border-l-4 border-l-forestaGold flex flex-col justify-between">
+                <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Cotizaciones IA</p>
+                <div class="flex items-baseline gap-2 mt-1"><p class="text-3xl font-extrabold text-gray-800">${totalCotizaciones}</p></div>
+                <p class="text-xs font-medium text-forestaGold mt-2 bg-yellow-50 px-2 py-1 rounded w-fit">🎯 ${cotizacionesPendientes} listas p/Cazador</p>
+            </div>
+            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-100 border-l-4 border-l-blue-600 flex flex-col justify-between">
+                <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Doctores CRM</p>
+                <div class="flex items-baseline gap-2 mt-1"><p class="text-3xl font-extrabold text-gray-800">${clientes.length}</p></div>
+                <p class="text-xs font-medium text-blue-600 mt-2 bg-blue-50 px-2 py-1 rounded w-fit">💳 ${pagosPorValidar} pagos en espera</p>
+            </div>
+            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-100 border-l-4 border-l-red-600 flex flex-col justify-between">
+                <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Alertas Logísticas</p>
+                <div class="flex items-baseline gap-2 mt-1"><p class="text-3xl font-extrabold text-gray-800">${productosCriticos.length}</p></div>
+                <p class="text-xs font-medium text-red-600 mt-2 bg-red-50 px-2 py-1 rounded w-fit">⚠️ SKUs para reorden</p>
+            </div>
+        </div>
+
+        <!-- SECCIÓN GRÁFICOS (POWER BI STYLE) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 md:col-span-2">
+                <h3 class="text-xs font-extrabold uppercase text-gray-500 tracking-wider mb-4">📈 Flujo Operativo (WhatsApp)</h3>
+                <div class="relative h-64 w-full">
+                    <canvas id="chartVolumen"></canvas>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex flex-col items-center justify-center">
+                <h3 class="text-xs font-extrabold uppercase text-gray-500 tracking-wider mb-4 w-full text-left">📦 Salud del Inventario</h3>
+                <div class="relative h-48 w-full flex justify-center">
+                    <canvas id="chartInventario"></canvas>
+                </div>
+                <div class="w-full mt-4 flex justify-around text-xs font-bold">
+                    <span class="text-green-600">● Óptimo</span>
+                    <span class="text-amber-500">● Reponer</span>
+                    <span class="text-red-600">● Crítico</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLAS DE DATOS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xs font-extrabold uppercase text-gray-500 tracking-wider">⚡ Actividad Reciente</h3>
+                    <a href="/admin" class="text-[10px] font-extrabold uppercase text-blue-600 hover:text-blue-800">Ver Todas →</a>
+                </div>
+                <table class="w-full text-left">
+                    <thead><tr class="border-b-2 border-gray-200 text-gray-400 text-[10px] uppercase tracking-wider"><th class="pb-2 font-bold">Fecha</th><th class="pb-2 font-bold">Doctor</th><th class="pb-2 font-bold">Gestión</th><th class="pb-2 font-bold">Estado</th></tr></thead>
+                    <tbody>${filasRecientes || '<tr><td colspan="4" class="py-4 text-center text-xs text-gray-400">Sin movimientos</td></tr>'}</tbody>
+                </table>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xs font-extrabold uppercase text-gray-500 tracking-wider">🚨 Tablero de Reposición</h3>
+                    <a href="/admin/inventario" class="text-[10px] font-extrabold uppercase text-blue-600 hover:text-blue-800">Abrir IA →</a>
+                </div>
+                <table class="w-full text-left">
+                    <thead><tr class="border-b-2 border-gray-200 text-gray-400 text-[10px] uppercase tracking-wider"><th class="pb-2 font-bold">SKU</th><th class="pb-2 font-bold">Producto</th><th class="pb-2 font-bold text-center">Actual</th><th class="pb-2 font-bold text-right">Alerta</th></tr></thead>
+                    <tbody>${filasCriticos || '<tr><td colspan="4" class="py-4 text-center text-xs text-green-600 font-bold">🟢 Inventario corporativo en niveles óptimos</td></tr>'}</tbody>
+                </table>
+            </div>
+        </div>
+        </div>
+
+        <script>
+            // Configuración Global Chart.js
+            Chart.defaults.font.family = "'Inter', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+            Chart.defaults.color = '#6b7280';
+
+            // Gráfico de Barras (Flujo Operativo)
+            const ctxVolumen = document.getElementById('chartVolumen').getContext('2d');
+            new Chart(ctxVolumen, {
+                type: 'bar',
+                data: {
+                    labels: ['Pedidos Cerrados', 'Cotizaciones IA', 'Pagos Eventos VIP', 'Consultas Generales'],
+                    datasets: [{
+                        label: 'Interacciones',
+                        data: [${totalPedidos}, ${totalCotizaciones}, ${totalPagosVIP}, ${totalContactos}],
+                        backgroundColor: ['#111111', '#B4975A', '#2563eb', '#9ca3af'],
+                        borderRadius: 4,
+                        barThickness: 40
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { padding: 10, cornerRadius: 4 } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { borderDash: [4, 4], color: '#f3f4f6' }, border: { display: false } },
+                        x: { grid: { display: false }, border: { display: false } }
+                    }
+                }
+            });
+
+            // Gráfico Doughnut (Salud Inventario)
+            const ctxInv = document.getElementById('chartInventario').getContext('2d');
+            new Chart(ctxInv, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Stock Óptimo', 'Por Reponer', 'Agotado/Crítico'],
+                    datasets: [{
+                        data: [${optimos}, ${reponer}, ${criticos}],
+                        backgroundColor: ['#16a34a', '#f59e0b', '#dc2626'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 4
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: { legend: { display: false } }
+                }
+            });
+        </script>
+        </body></html>`);
     } catch (e) { res.status(500).send('Error cargando el Dashboard'); }
 });
 
-// PEDIDOS Y PROFORMAS
+// ==========================================
+// 3. PEDIDOS, PROFORMAS Y BOTÓN CAZADOR
+// ==========================================
 router.get('/proforma/:id', async (req, res) => { 
     try { 
         const s = await Solicitud.findById(req.params.id); 
@@ -91,7 +242,7 @@ router.get('/admin', async (req, res) => {
             else { btn = `<span class="text-xs text-gray-500 font-extrabold uppercase block text-center bg-gray-100 py-1.5 px-2 rounded">✔️ ${s.estado_atencion.replace('_', ' ')}</span>`; }
             return `<tr class="border-b hover:bg-gray-50"><td class="p-4 text-xs font-bold text-gray-500">${new Date(s.fecha).toLocaleDateString('es-EC')}</td><td class="p-4 font-bold text-gray-800">${s.nombre_cliente}<br><span class="text-xs text-gray-400 font-normal">+${s.telefono_cliente}</span></td><td class="p-4 uppercase text-xs font-extrabold text-blue-600">${s.tipo_solicitud.replace('_', ' ')}</td><td class="p-4">${detalleExtra}</td><td class="p-4"><div class="flex flex-col gap-1 w-40">${btn}</div></td></tr>`;
         }).join('');
-        res.send(`<!DOCTYPE html><html><head><title>Pedidos y Proformas</title>${htmlHead}</head><body class="bg-gray-50 p-8"><div class="max-w-7xl mx-auto">${menuNavegacion}<div class="bg-white rounded-xl shadow border-t-8 border-forestaBlack overflow-hidden"><div class="p-6 border-b flex justify-between items-center"><div><h2 class="text-xl font-extrabold uppercase">📦 Bandeja Central</h2><p class="text-xs text-gray-500 font-bold">Despacho, validación QR y Botón Cazador</p></div></div><table class="w-full text-left"><thead><tr class="bg-gray-100 text-gray-600 text-xs uppercase"><th class="p-4">Fecha</th><th class="p-4">Cliente</th><th class="p-4">Tipo</th><th class="p-4">Detalle / Proforma</th><th class="p-4">Acción</th></tr></thead><tbody>${filas}</tbody></table></div><script>async function act(id, estado){ await fetch('/admin/estado', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, estado})}); location.reload(); } async function despacharPedido(id){ if(!confirm('¿Confirmar empaque y notificar despacho?')) return; await fetch('/admin/estado', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, estado: 'despachado', notificar: true})}); location.reload(); } async function aprobarPago(id_solicitud){ if(!confirm('¿Aprobar pago y enviar QR?')) return; const r = await fetch('/admin/pago/aprobar', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id_solicitud})}); const d = await r.json(); if(d.success) { alert('✅ Aprobado'); location.reload(); } else alert('❌ Error'); } async function cazar(id) { if(!confirm('¿Disparar seguimiento?')) return; try { const res = await fetch('/admin/solicitud/cazar', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id}) }); const data = await res.json(); if(data.success) { alert('✅ Enviado exitosamente'); location.reload(); } else { alert('❌ Error'); } } catch(e) { alert('❌ Error'); } }</script></div></body></html>`);
+        res.send(`<!DOCTYPE html><html><head><title>Bandeja de Pedidos B2B</title>${htmlHead}</head><body class="bg-gray-50 p-8"><div class="max-w-7xl mx-auto">${menuNavegacion}<div class="bg-white rounded-xl shadow border-t-8 border-forestaBlack overflow-hidden"><div class="p-6 border-b flex justify-between items-center"><div><h2 class="text-xl font-extrabold uppercase">📦 Bandeja Central</h2><p class="text-xs text-gray-500 font-bold">Despacho, validación QR y Botón Cazador</p></div></div><table class="w-full text-left"><thead><tr class="bg-gray-100 text-gray-600 text-xs uppercase"><th class="p-4">Fecha</th><th class="p-4">Cliente</th><th class="p-4">Tipo</th><th class="p-4">Detalle / Proforma</th><th class="p-4">Acción</th></tr></thead><tbody>${filas}</tbody></table></div><script>async function act(id, estado){ await fetch('/admin/estado', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, estado})}); location.reload(); } async function despacharPedido(id){ if(!confirm('¿Confirmar empaque y notificar despacho?')) return; await fetch('/admin/estado', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id, estado: 'despachado', notificar: true})}); location.reload(); } async function aprobarPago(id_solicitud){ if(!confirm('¿Aprobar pago y enviar QR?')) return; const r = await fetch('/admin/pago/aprobar', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id_solicitud})}); const d = await r.json(); if(d.success) { alert('✅ Aprobado'); location.reload(); } else alert('❌ Error'); } async function cazar(id) { if(!confirm('¿Disparar seguimiento?')) return; try { const res = await fetch('/admin/solicitud/cazar', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({id}) }); const data = await res.json(); if(data.success) { alert('✅ Enviado exitosamente'); location.reload(); } else { alert('❌ Error'); } } catch(e) { alert('❌ Error'); } }</script></div></body></html>`);
     } catch (e) { res.status(500).send('Error en bandeja de pedidos'); }
 });
 
