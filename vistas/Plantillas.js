@@ -37,7 +37,7 @@ const menuNavegacion = `
     </div>
     
     <!-- Botonera de Navegación -->
-    <div class="flex flex-wrap gap-2 justify-center">
+    <div id="menuPrincipal" class="flex flex-wrap gap-2 justify-center">
         <a href="/admin/dashboard" class="px-3 py-2 rounded-md text-xs font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition shadow-sm">📊 Dashboard</a>
         <a href="/admin" class="px-3 py-2 rounded-md text-xs font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition shadow-sm">📦 Pedidos</a>
         <a href="/admin/clientes" class="px-3 py-2 rounded-md text-xs font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition shadow-sm">👥 CRM</a>
@@ -46,6 +46,24 @@ const menuNavegacion = `
         <a href="/admin/catalogo" class="px-3 py-2 rounded-md text-xs font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition shadow-sm">⚙️ Catálogo</a>
     </div>
 </div>
+
+<!-- Lógica para remarcar el botón activo -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const currentPath = window.location.pathname;
+        const links = document.querySelectorAll('#menuPrincipal a');
+        
+        links.forEach(link => {
+            if (link.getAttribute('href') === currentPath) {
+                // 1. Le quitamos los colores de "apagado"
+                link.classList.remove('bg-gray-50', 'text-gray-600', 'bg-green-50', 'text-green-700', 'bg-blue-50', 'text-blue-700', 'hover:bg-gray-100', 'hover:bg-green-100', 'hover:bg-blue-100');
+                
+                // 2. Le ponemos el color ForestaBlack para marcarlo como activo
+                link.classList.add('bg-forestaBlack', 'text-white', 'border-forestaBlack', 'shadow-md');
+            }
+        });
+    });
+</script>
 `;
 
 module.exports = { htmlHead, menuNavegacion };
