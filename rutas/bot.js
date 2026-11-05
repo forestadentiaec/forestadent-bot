@@ -4,7 +4,11 @@ const router = express.Router();
 // Importamos la Base de Datos
 const { Usuario, Solicitud, Producto, Campana } = require('../modelos/BaseDatos');
 
-// --- CEREBRO DE INTELIGENCIA ARTIFICIAL ---
+// ==========================================
+// CEREBROS DE INTELIGENCIA ARTIFICIAL
+// ==========================================
+
+// 1. CEREBRO TRANSACCIONAL (Procesamiento de Pedidos en JSON)
 async function analizarPedidoConIA(texto) {
     const modelos = ['gemini-3.8-flash', 'gemini-3.5-flash'];
     const prompt = `Eres un asistente comercial. Pedido: "${texto}". Devuelve ÚNICAMENTE un arreglo JSON con "producto" y "cantidad" (solo números).`;
@@ -17,8 +21,9 @@ async function analizarPedidoConIA(texto) {
     } return null;
 }
 
+// 2. CEREBRO COTIZADOR (Base de Datos MongoDB)
 async function generarCotizacionConIA(texto, catalogo) {
-    const modelos = ['gemini-3.8-flash', 'gemini-3.5-flash'];
+    const modelos = ['gemini-1.5-flash', 'gemini-1.5-pro'];
     let catTxt = catalogo.map(p => `- ${p.nombre} | Precio Unidad: $${(p.precio || 0).toFixed(2)} | Empaque: ${p.empaque}`).join('\n');
     const prompt = `Cotizar: "${texto}"\nCatálogo:\n${catTxt}\nREGLA: Precio Unidad es 1 pieza suelta. Multiplica según cantidad/empaque. Formato: Saludo, Lista (Cant x Nombre = Subtotal), Total. PROHIBIDO TERMINAR CON PREGUNTAS.`;
     for (const modelo of modelos) {
@@ -30,12 +35,34 @@ async function generarCotizacionConIA(texto, catalogo) {
     } return "Error de cotización.";
 }
 
-// --- HERRAMIENTAS DEL BOT ---
+// 3. NUEVO CEREBRO CLÍNICO (Consulta al Catálogo Alemán en la Bóveda de Gemini Notebook)
+async function consultarCatalogoNotebook(textoPregunta) {
+    const NOTEBOOK_ID = "notebooks/a7840b8b-7816-400d-934a-486a57f14c31";
+    try {
+        // En una implementación real, aquí se llamaría a la API de retrieval de NotebookLM.
+        // Dado que el bot está en Node.js, simularemos la conexión RAG para que puedas ver la lógica.
+        
+        // 1. Aquí se enviaría el textoPregunta a NotebookLM para extraer los 'chunks' (pasajes) relevantes.
+        // 2. Aquí el LLM (Gemini) leería los pasajes extraídos del PDF para formular la respuesta clínica.
+        
+        // Retorno temporal mientras se inyecta la API de Google AI Studio / Vertex AI para RAG
+        return "El oráculo clínico está conectado a la bóveda (Catálogo Forestadent 38). La función de Retrieval (RAG) procesará esta solicitud técnica pronto.";
+    } catch (error) {
+        console.error("Error en bóveda clínica:", error);
+        return "Lo siento, el catálogo técnico está en mantenimiento.";
+    }
+}
+
+// ==========================================
+// HERRAMIENTAS DEL BOT
+// ==========================================
 async function enviarMensajeInmediato(tel, txt) { 
     await fetch(`https://graph.facebook.com/v25.0/${process.env.PHONE_NUMBER_ID}/messages`, { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', to: tel, type: 'text', text: { body: txt } }) }); 
 }
 
-// --- RUTAS DEL WEBHOOK DE WHATSAPP ---
+// ==========================================
+// RUTAS DEL WEBHOOK DE WHATSAPP
+// ==========================================
 router.get('/activar-meta', async (req, res) => { try { const response = await fetch(`https://graph.facebook.com/v25.0/2048355149178743/subscribed_apps`, { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' }}); res.status(200).json({ resultado: await response.json() }); } catch (error) { res.status(500).json({ error: error.message }); } });
 
 router.get('/webhook', (req, res) => { if (req.query['hub.mode'] === 'subscribe' && req.query['hub.verify_token'] === process.env.VERIFY_TOKEN) res.status(200).send(req.query['hub.challenge']); else res.sendStatus(403); });
@@ -53,7 +80,7 @@ router.post('/webhook', async (req, res) => {
 
         try {
             let u = await Usuario.findOne({ telefono: from });
-            let resp = ''; const txtM = `1️⃣ Catálogo\n2️⃣ Cotizar Productos\n3️⃣ Nuevo Pedido\n4️⃣ Contacto`;
+            let resp = ''; const txtM = `1️⃣ Catálogo\n2️⃣ Cotizar Productos\n3️⃣ Nuevo Pedido\n4️⃣ Duda Técnica (Oráculo)\n5️⃣ Contacto`;
 
             if (!u) { u = new Usuario({ telefono: from, nombre_whatsapp: nombre }); await u.save(); }
 
@@ -85,6 +112,17 @@ router.post('/webhook', async (req, res) => {
                     resp = `✅ *¡Pre-reserva confirmada!*\n\nRealiza tu transferencia a:\n${c.datos_bancarios || 'Cta. Forestadent'}\n\n📸 *Cuando transfieras, envíame la foto del comprobante aquí mismo.*`;
                     u.estado_conversacion = 'esperando_pago'; await u.save();
                 }
+            }
+            // LÓGICA DE DUDAS TÉCNICAS (CONEXIÓN A LA BÓVEDA)
+            else if (msgL.includes('duda') || msgL.includes('catalogo') || u.estado_conversacion === 'esperando_duda') {
+                 if (u.estado_conversacion === 'esperando_duda') {
+                     await enviarMensajeInmediato(from, "⏳ Consultando el catálogo general alemán...");
+                     resp = await consultarCatalogoNotebook(mBody);
+                     u.estado_conversacion = 'menu_principal'; await u.save();
+                 } else {
+                     u.estado_conversacion = 'esperando_duda'; await u.save();
+                     resp = "Escribe tu pregunta técnica sobre brackets, torques, medidas o aleaciones:";
+                 }
             }
             // LÓGICA DEL CORE (PEDIDOS Y COTIZACIONES)
             else if (msgL === 'menu' || msgL === 'menú') { u.estado_conversacion = 'menu_principal'; await u.save(); resp = txtM; }
@@ -120,10 +158,11 @@ router.post('/webhook', async (req, res) => {
             else if (u.estado_conversacion === 'menu_principal' || u.estado_conversacion === 'inicio') {
                 if (u.estado_conversacion === 'inicio') { u.estado_conversacion = 'menu_principal'; await u.save(); }
                 switch(mBody) {
-                    case '1': resp = `📘 *Catálogo*\nwww.forestadent.com`; break;
-                    case '2': u.estado_conversacion = 'esperando_cotizacion'; await u.save(); resp = `Escribe a cotizar:`; break;
+                    case '1': resp = `📘 *Catálogo B2B*\nwww.forestadent.com`; break;
+                    case '2': u.estado_conversacion = 'esperando_cotizacion'; await u.save(); resp = `Escribe lo que deseas cotizar:`; break;
                     case '3': u.estado_conversacion = 'esperando_pedido'; await u.save(); resp = `Escribe tu pedido:`; break;
-                    case '4': u.estado_conversacion = 'esperando_contacto'; await u.save(); resp = `Motivo:`; break;
+                    case '4': u.estado_conversacion = 'esperando_duda'; await u.save(); resp = `Escribe tu pregunta técnica (Ej: ¿Qué torque tienen los BioQuick?):`; break;
+                    case '5': u.estado_conversacion = 'esperando_contacto'; await u.save(); resp = `Motivo de contacto:`; break;
                     default: resp = `No reconocí.\n\n` + txtM; break;
                 }
             } else { resp = `Recibí tu mensaje.\n_(Escribe *Menu*)_`; }
