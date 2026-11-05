@@ -10,6 +10,7 @@ const PORT = process.env.PORT || 3000;
 // 1. CONFIGURACIÓN DE MIDDLEWARES
 // ==========================================
 app.set('view engine', 'ejs'); // <-- Agregado para que el servidor pueda dibujar las vistas HTML/EJS
+app.set('views', './vistas');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public')); // Permite cargar recursos como el logo de Forestadent
