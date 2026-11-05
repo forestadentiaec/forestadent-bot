@@ -3,35 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forestadent Ecuador | B2B Portal</title>
-    <!-- Carga de estilos modernos y fuentes -->
+    <title>Forestadent Ecuador | Portal Oficial B2B</title>
+    <!-- Tailwind CSS y FontAwesome -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Montserrat', sans-serif; scroll-behavior: smooth; }
-        .bg-forestadent { background-color: #0b1f38; } /* Azul corporativo oscuro */
-        .text-gold { color: #cda434; } /* Dorado premium */
+        .bg-forestadent { background-color: #0b1f38; }
+        .text-gold { color: #cda434; }
         .bg-gold { background-color: #cda434; }
-        .hero-pattern { background-image: linear-gradient(rgba(11, 31, 56, 0.9), rgba(11, 31, 56, 0.9)), url('https://images.unsplash.com/photo-1606811841689-23dfddce3e95?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'); background-size: cover; background-position: center; }
+        .border-gold { border-color: #cda434; }
+        .hero-pattern { background-image: linear-gradient(rgba(11, 31, 56, 0.92), rgba(11, 31, 56, 0.92)), url('https://images.unsplash.com/photo-1606811841689-23dfddce3e95?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'); background-size: cover; background-position: center; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-    <!-- Navegación -->
-    <nav class="bg-forestadent text-white shadow-lg fixed w-full z-50">
+    <!-- Navbar Superior -->
+    <nav class="bg-forestadent text-white shadow-xl fixed w-full z-50 border-b border-gray-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-20">
-                <div class="flex items-center">
-                    <span class="text-2xl font-bold tracking-widest uppercase">Forestadent<span class="text-gold">.</span></span>
-                    <span class="ml-2 text-sm text-gray-300 border-l border-gray-500 pl-2">ECUADOR B2B</span>
+            <div class="flex justify-between h-20 items-center">
+                <div class="flex items-center space-x-3">
+                    <!-- Tu logo oficial cargado desde la carpeta public -->
+                    <a href="#inicio" class="flex items-center">
+                        <img src="/logo-vector-forestadent.webp" alt="Forestadent Ecuador" class="h-10 w-auto object-contain">
+                    </a>
+                    <span class="hidden sm:inline-block text-xs text-gray-300 border-l border-gray-600 pl-3 uppercase tracking-wider">Ecuador B2B</span>
                 </div>
-                <div class="hidden md:flex items-center space-x-8">
+                <div class="hidden md:flex items-center space-x-8 text-sm font-medium">
                     <a href="#inicio" class="hover:text-gold transition">Inicio</a>
-                    <a href="#nosotros" class="hover:text-gold transition">Tradición & Precisión</a>
-                    <a href="#productos" class="hover:text-gold transition">Alta Rotación</a>
-                    <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20deseo%20acceso%20al%20Oráculo%20Clínico" target="_blank" class="border border-gold text-gold px-4 py-2 rounded hover:bg-gold hover:text-white transition">
-                        <i class="fas fa-robot mr-2"></i> Oráculo IA
+                    <a href="#trayectoria" class="hover:text-gold transition">Made in Black Forest</a>
+                    <a href="#catalogo" class="hover:text-gold transition">Alta Rotación</a>
+                    <a href="#soporte" class="hover:text-gold transition">Oráculo Clínico</a>
+                    <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20deseo%20asesoría%20comercial" target="_blank" class="bg-gold text-forestadent px-5 py-2.5 rounded font-bold hover:bg-yellow-500 transition shadow-md">
+                        <i class="fab fa-whatsapp mr-2 text-base"></i> Canal Directo
                     </a>
                 </div>
             </div>
@@ -39,91 +44,224 @@
     </nav>
 
     <!-- Hero Section -->
-    <section id="inicio" class="hero-pattern text-white pt-32 pb-20 lg:pt-48 lg:pb-32">
+    <section id="inicio" class="hero-pattern text-white pt-36 pb-24 lg:pt-48 lg:pb-32">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 class="text-4xl lg:text-6xl font-bold mb-6">Precisión Alemana en Ortodoncia<br><span class="text-gold">Made in Black Forest</span></h1>
-            <p class="text-lg lg:text-xl text-gray-300 mb-10 max-w-3xl mx-auto">Conectamos el más alto estándar de la ingeniería micrométrica dental con tu clínica o universidad en Ecuador, sin fricciones operativas y con disponibilidad inmediata.</p>
-            <div class="flex justify-center space-x-4">
-                <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20deseo%20cotizar%20productos" target="_blank" class="bg-gold text-forestadent font-bold px-8 py-3 rounded shadow-lg hover:bg-yellow-500 transition">Cotizar Vía WhatsApp</a>
-                <a href="#productos" class="border border-white text-white px-8 py-3 rounded hover:bg-white hover:text-forestadent transition">Ver Catálogo</a>
+            <span class="inline-block bg-gold/20 text-gold border border-gold/40 text-xs font-semibold px-4 py-1.5 rounded-full uppercase tracking-widest mb-6">11 Años de Representación Oficial en Ecuador</span>
+            <h1 class="text-4xl lg:text-6xl font-extrabold mb-6 tracking-tight leading-tight">Ingeniería Alemana de Precisión<br><span class="text-gold">para Ortodoncistas de Élite</span></h1>
+            <p class="text-lg lg:text-xl text-gray-300 mb-10 max-w-3xl mx-auto leading-relaxed">Suministro directo, stock garantizado de alta rotación y soporte clínico automatizado para clínicas, especialistas y posgrados universitarios.</p>
+            <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20quiero%20cotizar%20materiales" target="_blank" class="bg-gold text-forestadent font-bold px-8 py-4 rounded-lg shadow-xl hover:bg-yellow-500 transition text-center">Cotizar por WhatsApp</a>
+                <a href="#catalogo" class="border border-gray-400 text-white font-semibold px-8 py-4 rounded-lg hover:bg-white hover:text-forestadent transition text-center">Explorar Productos VIP</a>
             </div>
         </div>
     </section>
 
-    <!-- Tradición y Nosotros -->
-    <section id="nosotros" class="py-20 bg-white">
+    <!-- Barra de Estadísticas de Confianza -->
+    <section class="bg-forestadent border-t border-b border-gray-800 text-white py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div>
+                <p class="text-3xl lg:text-4xl font-bold text-gold">11+ K</p>
+                <p class="text-xs text-gray-400 uppercase tracking-wider mt-1">Años en el mercado ecuatoriano</p>
+            </div>
+            <div>
+                <p class="text-3xl lg:text-4xl font-bold text-white">100%</p>
+                <p class="text-xs text-gray-400 uppercase tracking-wider mt-1">Original Made in Pforzheim</p>
+            </div>
+            <div>
+                <p class="text-3xl lg:text-4xl font-bold text-gold">24/7</p>
+                <p class="text-xs text-gray-400 uppercase tracking-wider mt-1">Asistencia con IA y Catálogo VIP</p>
+            </div>
+            <div>
+                <p class="text-3xl lg:text-4xl font-bold text-white">Nacional</p>
+                <p class="text-xs text-gray-400 uppercase tracking-wider mt-1">Despachos a todo el país</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sección Trayectoria / Made in Black Forest -->
+    <section id="trayectoria" class="py-24 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
                 <div>
-                    <h2 class="text-3xl font-bold mb-6 text-forestadent">11 Años Liderando el Mercado Ecuatoriano</h2>
-                    <p class="text-gray-600 mb-4">Lo que comenzó en 1907 en la Selva Negra alemana con la creación de relojería de lujo, ha evolucionado en el nombre más respetado de la ortodoncia global.</p>
-                    <p class="text-gray-600 mb-6">En Ecuador, llevamos más de una década siendo el puente directo entre esta excelencia técnica y los mejores especialistas del país. Gestionamos tu suministro con herramientas de Inteligencia Artificial para que tu clínica nunca se detenga.</p>
-                    <ul class="space-y-3 text-gray-700 font-semibold">
-                        <li><i class="fas fa-check text-gold mr-2"></i> Stock local de alta rotación</li>
-                        <li><i class="fas fa-check text-gold mr-2"></i> Portal automatizado B2B (Clínicas y Universidades)</li>
-                        <li><i class="fas fa-check text-gold mr-2"></i> Soporte técnico impulsado por IA</li>
-                    </ul>
+                    <h2 class="text-3xl lg:text-4xl font-bold text-forestadent mb-6 leading-snug">Tradición y Know-How desde la Selva Negra</h2>
+                    <p class="text-gray-600 mb-4 leading-relaxed">Con más de un siglo de historia evolucionando desde la alta precisión de la industria relojera alemana en Pforzheim, Forestadent combina la artesanía tradicional con la innovación tecnológica más avanzada.</p>
+                    <p class="text-gray-600 mb-8 leading-relaxed">En Ecuador, garantizamos que cada bracket, tornillo de disyunción y línea de alineadores cumpla con los estándares rigurosos que exige la ortodoncia contemporánea.</p>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-start space-x-4">
+                            <div class="bg-gold/10 p-3 rounded-lg text-gold font-bold"><i class="fas fa-microscope text-xl"></i></div>
+                            <div>
+                                <h3 class="font-bold text-forestadent text-lg">Superficies de Calidad Superior</h3>
+                                <p class="text-sm text-gray-500">Tecnología de micropulido y bases patentadas para una retención biológica óptima.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-4">
+                            <div class="bg-gold/10 p-3 rounded-lg text-gold font-bold"><i class="fas fa-shipping-fast text-xl"></i></div>
+                            <div>
+                                <h3 class="font-bold text-forestadent text-lg">Disponibilidad Inmediata</h3>
+                                <p class="text-sm text-gray-500">Stock permanente en Quito de las líneas de alta rotación para entrega sin demoras.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-gray-100 p-8 rounded-lg shadow-inner text-center">
-                    <i class="fas fa-gem text-6xl text-gold mb-4"></i>
-                    <h3 class="text-xl font-bold text-forestadent mb-2">El ADN de la Precisión</h3>
-                    <p class="text-gray-500">"No pensamos en milímetros, pensamos en micrómetros. Porque la verdadera precisión reside en los detalles más pequeños."</p>
+                
+                <div class="bg-gray-100 p-8 lg:p-12 rounded-2xl shadow-inner border border-gray-200">
+                    <h3 class="text-2xl font-bold text-forestadent mb-4">Innovación Digital & Asistencia</h3>
+                    <p class="text-gray-600 mb-6 text-sm leading-relaxed">Nuestra plataforma integra un ecosistema inteligente que facilita la cotización instantánea y la consulta técnica especializada para profesionales de la salud oral.</p>
+                    <div class="bg-white p-6 rounded-xl shadow border-l-4 border-gold">
+                        <p class="text-xs uppercase tracking-wider text-gray-400 font-bold mb-1">Ecosistema B2B</p>
+                        <p class="text-sm font-semibold text-forestadent">Conectamos la excelencia de los materiales alemanes con canales automatizados de respuesta rápida en WhatsApp y web.</p>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Productos de Alta Rotación -->
-    <section id="productos" class="py-20 bg-gray-50">
+    <!-- Catálogo de Alta Rotación -->
+    <section id="catalogo" class="py-24 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
-                <h2 class="text-3xl font-bold text-forestadent">Catálogo Estratégico</h2>
-                <p class="text-gray-500 mt-2">Disponibilidad inmediata para el mercado ecuatoriano.</p>
+                <span class="text-xs font-bold text-gold uppercase tracking-widest bg-gold/10 px-3 py-1 rounded">Inventario Disponible</span>
+                <h2 class="text-3xl lg:text-4xl font-bold text-forestadent mt-3">Productos Estrella de Alta Rotación</h2>
+                <p class="text-gray-500 mt-2 max-w-xl mx-auto">Selección directa de los sistemas más solicitados por especialistas y posgrados en el país.</p>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <!-- Tarjeta 1 -->
-                <div class="bg-white rounded-lg shadow-lg overflow-hidden border-t-4 border-gold">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Card 1 -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition flex flex-col justify-between">
                     <div class="p-6">
-                        <h3 class="font-bold text-xl mb-2 text-forestadent">Brackets Quicklear</h3>
-                        <p class="text-sm text-gray-500 mb-4">Autoligado Cerámico (MBT/Face). Máxima estética y baja fricción.</p>
-                        <p class="text-2xl font-bold text-gold">$320 <span class="text-sm text-gray-400">+ IVA / Caso</span></p>
+                        <span class="text-xs font-semibold text-gold bg-gold/10 px-2.5 py-1 rounded">Brackets Estéticos</span>
+                        <h3 class="font-bold text-xl text-forestadent mt-3 mb-2">Quicklear Cerámicos</h3>
+                        <p class="text-sm text-gray-500 mb-6">Autoligado pasivo (MBT/Face). Estética superior y baja fricción clínica.</p>
+                        <div class="text-2xl font-extrabold text-forestadent">$320 <span class="text-xs font-normal text-gray-400">+ IVA / Caso</span></div>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                        <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20deseo%20cotizar%20Quicklear" target="_blank" class="text-sm font-bold text-forestadent hover:text-gold flex items-center justify-between">
+                            <span>Cotizar disponibilidad</span> <i class="fas fa-arrow-right"></i>
+                        </a>
                     </div>
                 </div>
-                <!-- Tarjeta 2 -->
-                <div class="bg-white rounded-lg shadow-lg overflow-hidden border-t-4 border-forestadent">
+
+                <!-- Card 2 -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition flex flex-col justify-between">
                     <div class="p-6">
-                        <h3 class="font-bold text-xl mb-2 text-forestadent">Mini Sprint Face</h3>
-                        <p class="text-sm text-gray-500 mb-4">Brackets metálicos de precisión. Perfil bajo para máximo confort.</p>
-                        <p class="text-2xl font-bold text-forestadent">$100 <span class="text-sm text-gray-400">Incl. IVA / Caso</span></p>
-                        <p class="text-xs text-green-600 mt-2 font-bold">Promo: 10 casos por $800 c/u</p>
+                        <span class="text-xs font-semibold text-blue-800 bg-blue-100 px-2.5 py-1 rounded">Brackets Metálicos</span>
+                        <h3 class="font-bold text-xl text-forestadent mt-3 mb-2">Mini Sprint Face</h3>
+                        <p class="text-sm text-gray-500 mb-6">Diseño de perfil bajo y gran comodidad. Promociones especiales por volumen.</p>
+                        <div class="text-2xl font-extrabold text-forestadent">$100 <span class="text-xs font-normal text-gray-400">Incl. IVA / Caso</span></div>
+                        <p class="text-xs text-green-600 font-semibold mt-2">Promo Posgrado: 10 casos por $800</p>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                        <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20deseo%20cotizar%20Mini%20Sprint" target="_blank" class="text-sm font-bold text-forestadent hover:text-gold flex items-center justify-between">
+                            <span>Cotizar disponibilidad</span> <i class="fas fa-arrow-right"></i>
+                        </a>
                     </div>
                 </div>
-                <!-- Tarjeta 3 -->
-                <div class="bg-white rounded-lg shadow-lg overflow-hidden border-t-4 border-forestadent">
+
+                <!-- Card 3 -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition flex flex-col justify-between">
                     <div class="p-6">
-                        <h3 class="font-bold text-xl mb-2 text-forestadent">Mini Implantes Orto Easy</h3>
-                        <p class="text-sm text-gray-500 mb-4">Anclaje esquelético simplificado (6, 8 y 10mm).</p>
-                        <p class="text-2xl font-bold text-forestadent">$156.50 <span class="text-sm text-gray-400">+ IVA / Unidad</span></p>
-                        <p class="text-xs text-green-600 mt-2 font-bold">Promo: Kit de 5 implantes $180 (Incl. IVA)</p>
+                        <span class="text-xs font-semibold text-purple-800 bg-purple-100 px-2.5 py-1 rounded">Anclaje Esquelético</span>
+                        <h3 class="font-bold text-xl text-forestadent mt-3 mb-2">Mini Implantes Orto Easy</h3>
+                        <p class="text-sm text-gray-500 mb-6">Soluciones versátiles de anclaje absoluto (Medidas de 6, 8 y 10mm).</p>
+                        <div class="text-2xl font-extrabold text-forestadent">$156.50 <span class="text-xs font-normal text-gray-400">+ IVA / Unidad</span></div>
+                        <p class="text-xs text-green-600 font-semibold mt-2">Kit de 5 unidades a $180 (Incl. IVA)</p>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                        <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20deseo%20cotizar%20Orto%20Easy" target="_blank" class="text-sm font-bold text-forestadent hover:text-gold flex items-center justify-between">
+                            <span>Cotizar disponibilidad</span> <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition flex flex-col justify-between">
+                    <div class="p-6">
+                        <span class="text-xs font-semibold text-blue-800 bg-blue-100 px-2.5 py-1 rounded">Brackets Metálicos</span>
+                        <h3 class="font-bold text-xl text-forestadent mt-3 mb-2">Easy Eco Roth-MBT</h3>
+                        <p class="text-sm text-gray-500 mb-6">Eficiencia económica y rendimiento clínico garantizado para la práctica diaria.</p>
+                        <div class="text-2xl font-extrabold text-forestadent">$85 <span class="text-xs font-normal text-gray-400">Incl. IVA / Caso</span></div>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                        <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20deseo%20cotizar%20Easy%20Eco" target="_blank" class="text-sm font-bold text-forestadent hover:text-gold flex items-center justify-between">
+                            <span>Cotizar disponibilidad</span> <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Card 5 -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition flex flex-col justify-between">
+                    <div class="p-6">
+                        <span class="text-xs font-semibold text-amber-800 bg-amber-100 px-2.5 py-1 rounded">Expansión</span>
+                        <h3 class="font-bold text-xl text-forestadent mt-3 mb-2">Tornillos de Disyunción Hyrax</h3>
+                        <p class="text-sm text-gray-500 mb-6">Disponibles en versiones Slim 12mm y Normal 13mm de alta estabilidad.</p>
+                        <div class="text-2xl font-extrabold text-forestadent">$28 - $38 <span class="text-xs font-normal text-gray-400">/ Unidad</span></div>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                        <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20deseo%20cotizar%20Tornillos%20Hyrax" target="_blank" class="text-sm font-bold text-forestadent hover:text-gold flex items-center justify-between">
+                            <span>Cotizar disponibilidad</span> <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Card 6 -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition flex flex-col justify-between">
+                    <div class="p-6">
+                        <span class="text-xs font-semibold text-indigo-800 bg-indigo-100 px-2.5 py-1 rounded">Autoligado Avanzado</span>
+                        <h3 class="font-bold text-xl text-forestadent mt-3 mb-2">BioQuick 5ta Gen</h3>
+                        <p class="text-sm text-gray-500 mb-6">Control tridimensional insuperable. Precios especiales para estudiantes de posgrado.</p>
+                        <div class="text-2xl font-extrabold text-forestadent">$199 <span class="text-xs font-normal text-gray-400">Incl. IVA / Caso</span></div>
+                        <p class="text-xs text-green-600 font-semibold mt-2">Promo Posgrado: $155.65 + IVA</p>
+                    </div>
+                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                        <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20deseo%20cotizar%20BioQuick" target="_blank" class="text-sm font-bold text-forestadent hover:text-gold flex items-center justify-between">
+                            <span>Cotizar disponibilidad</span> <i class="fas fa-arrow-right"></i>
+                        </a>
                     </div>
                 </div>
             </div>
-            
-            <div class="mt-12 text-center">
-                <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20deseo%20ver%20el%20catálogo%20completo" target="_blank" class="text-forestadent font-bold hover:text-gold transition">Solicitar Lista de Precios Completa por WhatsApp &rarr;</a>
+
+            <div class="mt-14 text-center">
+                <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20quiero%20el%20catalogo%20completo" target="_blank" class="inline-block bg-forestadent text-white font-bold px-8 py-4 rounded-lg shadow-lg hover:bg-slate-800 transition">Solicitar Catálogo Completo por WhatsApp</a>
             </div>
         </div>
     </section>
 
-    <!-- Footer & Botón Flotante WhatsApp -->
-    <footer class="bg-forestadent text-gray-400 py-8 text-center">
-        <p>&copy; 2026 Forestadent Ecuador. Representado por TPQ. Todos los derechos reservados.</p>
+    <!-- Sección Soporte Inteligente / Oráculo IA -->
+    <section id="soporte" class="py-24 bg-white border-t border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-forestadent rounded-2xl text-white p-8 lg:p-16 shadow-2xl relative overflow-hidden flex flex-col lg:flex-row items-center justify-between">
+                <div class="lg:w-2/3 mb-8 lg:mb-0 z-10">
+                    <span class="text-xs font-bold text-gold uppercase tracking-widest bg-gold/20 px-3 py-1 rounded">Asistencia Técnica 24/7</span>
+                    <h2 class="text-3xl lg:text-4xl font-extrabold mt-4 mb-4">¿Tienes dudas sobre especificaciones o guías clínicas?</h2>
+                    <p class="text-gray-300 mb-6 leading-relaxed">Conéctate de forma inmediata con nuestro canal de asistencia inteligente impulsado por IA, conectado a la documentación técnica alemana para resolver consultas de torque, prescripción y compatibilidad.</p>
+                    <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20necesito%20soporte%20del%20Oráculo%20Clínico" target="_blank" class="inline-block bg-gold text-forestadent font-bold px-8 py-3.5 rounded-lg hover:bg-yellow-500 transition shadow-md">Consultar al Asistente IA</a>
+                </div>
+                <div class="lg:w-1/3 flex justify-center z-10">
+                    <div class="bg-white/10 p-8 rounded-full border border-white/20 text-gold">
+                        <i class="fas fa-robot text-6xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer Corporativo Limpio -->
+    <footer class="bg-forestadent text-gray-400 py-12 border-t border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center text-center md:text-left">
+            <div class="mb-4 md:mb-0">
+                <span class="text-xl font-bold tracking-widest text-white uppercase">Forestadent<span class="text-gold">.</span> Ecuador</span>
+                <p class="text-xs text-gray-500 mt-1">Representación Oficial y Distribución Autorizada en el Ecuador.</p>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500">&copy; 2026 Forestadent Ecuador. Todos los derechos reservados.</p>
+            </div>
+        </div>
     </footer>
 
-    <!-- WhatsApp Flotante -->
-    <a href="https://wa.me/593983881967?text=Hola,%20vengo%20de%20la%20página%20web" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white p-4 rounded-full shadow-2xl hover:bg-green-600 transition-transform transform hover:scale-110 z-50">
-        <i class="fab fa-whatsapp text-3xl"></i>
+    <!-- Botón Flotante de WhatsApp -->
+    <a href="https://wa.me/573028665643?text=Hola,%20vengo%20de%20la%20pagina%20web" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white w-14 h-14 flex items-center justify-center rounded-full shadow-2xl hover:bg-green-600 transition-transform transform hover:scale-110 z-50 text-2xl">
+        <i class="fab fa-whatsapp"></i>
     </a>
 
 </body>
