@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= clinica.nombre %> | Asistente Virtual de Ortodoncia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Montserrat', sans-serif; }
+        :root {
+            --color-primario: <%= clinica.color_primario || '#0b1f38' %>;
+            --color-acento: <%= clinica.color_acento || '#cda434' %>;
+        }
+        .bg-primario { background-color: var(--color-primario); }
+        .text-primario { color: var(--color-primario); }
+        .bg-acento { background-color: var(--color-acento); }
+        .text-acento { color: var(--color-acento); }
+        .border-acento { border-color: var(--color-acento); }
+        .chat-scroll::-webkit-scrollbar { width: 6px; }
+        .chat-scroll::-webkit-scrollbar-thumb { background-color: rgba(0, 0, 0, 0.2); border-radius: 9999px; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+
+    <!-- Cabecera del Consultorio / Clínica -->
+    <header class="bg-primario text-white shadow-lg border-b-4 border-acento">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-4 text-center sm:text-left">
+                <% if (clinica.logo_url) { %>
+                    <img src="<%= clinica.logo_url %>" alt="<%= clinica.nombre %>" class="h-14 w-14 rounded-xl object-contain bg-white p-1.5 shadow">
+                <% } else { %>
+                    <div class="h-14 w-14 rounded-xl bg-acento text-primario font-extrabold text-2xl flex items-center justify-center shadow">
+                        <%= (clinica.nombre || 'C').charAt(0).toUpperCase() %>
+                    </div>
+                <% } %>
+                <div>
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-acento block">
+                        <%= clinica.tipo === 'universidad' ? 'Clínica Universitaria / Posgrado' : clinica.tipo === 'clinica' ? 'Clínica Especializada' : 'Consultorio de Ortodoncia' %>
+                    </span>
+                    <h1 class="text-xl sm:text-2xl font-extrabold leading-tight"><%= clinica.nombre %></h1>
+                    <% if (clinica.responsable) { %>
+                        <p class="text-xs text-gray-300 mt-0.5"><%= clinica.responsable %> · <%= clinica.ciudad || 'Ecuador' %></p>
+                    <% } %>
+                </div>
+            </div>
+            <div class="text-xs text-gray-200 text-center sm:text-right space-y-1">
+                <% if (clinica.horarios) { %>
+                    <p><i class="far fa-clock text-acento mr-1.5"></i><%= clinica.horarios %></p>
+                <% } %>
+                <% if (clinica.direccion) { %>
+                    <p><i class="fas fa-map-marker-alt text-acento mr-1.5"></i><%= clinica.direccion %></p>
+                <% } %>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido Principal: Información + Chat IA Integrado -->
+    <main class="max-w-6xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+        <!-- Columna Izquierda: Servicios e Información -->
+        <div class="lg:col-span-5 space-y-6">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+                <h2 class="text-lg font-extrabold text-primario mb-3">Nuestros Tratamientos</h2>
+                <div class="space-y-2.5">
+                    <% listaServicios.forEach(function(serv) { %>
+                        <button type="button" class="btn-servicio w-full text-left flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-200 transition text-sm font-semibold text-gray-700" data-servicio="<%= serv %>">
+                            <span><i class="fas fa-check-circle text-acento mr-2"></i><%= serv %></span>
+                            <i class="fas fa-chevron-right text-xs text-gray-400"></i>
+                        </button>
+                    <% }); %>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 space-y-3 text-sm text-gray-600">
+                <h3 class="font-bold text-primario text-base">Atención Inmediata 24/7</h3>
+                <p class="text-xs leading-relaxed">
+                    Nuestro asistente virtual responde tus dudas sobre tratamientos, tiempos y valoración al instante, y te conecta directo con recepción para agendar tu cita.
+                </p>
+                <% if (clinica.telefono_whatsapp) { %>
+                    <a href="https://wa.me/<%= clinica.telefono_whatsapp %>?text=<%= encodeURIComponent('Hola ' + clinica.nombre + ', deseo información para agendar una valoración.') %>" target="_blank" class="inline-flex items-center justify-center w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition shadow">
+                        <i class="fab fa-whatsapp text-base mr-2"></i> Escribir directo a WhatsApp
+                    </a>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- Columna Derecha: Chat IA Interactivo -->
+        <div class="lg:col-span-7">
+            <div class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden flex flex-col h-[560px]">
+                <!-- Barra Superior del Chat -->
+                <div class="bg-primario text-white px-5 py-4 flex items-center justify-between flex-shrink-0">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full bg-white/15 border border-acento text-acento flex items-center justify-center">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-sm font-bold">Asistente Virtual · <%= clinica.nombre %></h2>
+                            <p class="text-[11px] text-emerald-400 flex items-center">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 mr-1.5"></span> En línea ahora
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paso 1: Registro del Paciente -->
+                <div id="pasoRegistro" class="p-6 flex-1 overflow-y-auto flex flex-col justify-center bg-gray-50">
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm max-w-md mx-auto w-full">
+                        <h3 class="text-base font-extrabold text-primario mb-1">¡Bienvenido!</h3>
+                        <p class="text-xs text-gray-500 mb-4 leading-relaxed"><%= clinica.mensaje_bienvenida %></p>
+
+                        <form id="formRegistroPaciente" class="space-y-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Tu nombre *</label>
+                                <input type="text" id="pacNombre" required placeholder="Ej: Andrea López" class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:border-gray-800">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Tu WhatsApp *</label>
+                                <input type="tel" id="pacTelefono" required placeholder="Ej: 0991234567" class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:border-gray-800">
+                            </div>
+                            <p id="errReg" class="hidden text-xs text-red-600 font-bold"></p>
+                            <button type="submit" id="btnRegPac" class="w-full bg-primario text-white font-bold py-3 rounded-xl shadow hover:opacity-95 transition text-sm">
+                                Iniciar Chat con Asistente IA
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Paso 2: Chat Activo -->
+                <div id="pasoChat" class="hidden flex-1 flex flex-col overflow-hidden bg-gray-50">
+                    <div id="listaMensajes" class="flex-1 p-4 overflow-y-auto space-y-3 chat-scroll text-sm"></div>
+
+                    <% if (clinica.telefono_whatsapp) { %>
+                    <div id="barraWa" class="px-4 py-2 bg-emerald-50 border-t border-emerald-100 flex items-center justify-between gap-2">
+                        <span class="text-[11px] font-semibold text-emerald-800">¿Deseas agendar tu valoración?</span>
+                        <a id="linkWaCita" href="#" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg inline-flex items-center space-x-1.5 transition flex-shrink-0">
+                            <i class="fab fa-whatsapp"></i>
+                            <span>Agendar por WhatsApp</span>
+                        </a>
+                    </div>
+                    <% } %>
+
+                    <form id="formChat" class="p-3 bg-white border-t border-gray-200 flex items-center gap-2 flex-shrink-0">
+                        <input type="text" id="inputMsg" placeholder="Pregunta sobre tratamientos, horarios o citas..." autocomplete="off" class="flex-1 px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm outline-none focus:border-gray-800">
+                        <button type="submit" id="btnSend" class="bg-primario text-acento w-10 h-10 rounded-xl flex items-center justify-center shadow hover:opacity-90 flex-shrink-0">
+                            <i class="fas fa-paper-plane text-sm"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Pie discreto con respaldo de marca Forestadent Ecuador -->
+    <footer class="py-5 text-center text-[11px] text-gray-400 border-t border-gray-200 bg-white">
+        <p>&copy; <%= new Date().getFullYear() %> <%= clinica.nombre %> · Tecnología IA respaldada por <a href="/" class="font-semibold text-gray-600 hover:underline">Forestadent Ecuador</a></p>
+    </footer>
+
+    <script>
+        (function () {
+            const SLUG = "<%= clinica.slug %>";
+            const CLINICA_NOMBRE = "<%= clinica.nombre %>";
+            const CLINICA_WA = "<%= clinica.telefono_whatsapp || '' %>";
+            const STORAGE_KEY = "foresta_pac_" + SLUG;
+
+            const pasoRegistro = document.getElementById('pasoRegistro');
+            const pasoChat = document.getElementById('pasoChat');
+            const formReg = document.getElementById('formRegistroPaciente');
+            const errReg = document.getElementById('errReg');
+            const btnReg = document.getElementById('btnRegPac');
+            const listaMensajes = document.getElementById('listaMensajes');
+            const formChat = document.getElementById('formChat');
+            const inputMsg = document.getElementById('inputMsg');
+            const btnSend = document.getElementById('btnSend');
+            const linkWaCita = document.getElementById('linkWaCita');
+
+            let paciente = null;
+            let historial = [];
+            let consultaPendiente = '';
+            let enviando = false;
+
+            try {
+                const guardado = sessionStorage.getItem(STORAGE_KEY);
+                if (guardado) {
+                    paciente = JSON.parse(guardado);
+                    activarVistaChat(false);
+                }
+            } catch (e) {}
+
+            function escHtml(t) {
+                const d = document.createElement('div');
+                d.textContent = t;
+                return d.innerHTML;
+            }
+
+            function agregarMsg(rol, texto) {
+                const w = document.createElement('div');
+                w.className = rol === 'usuario' ? 'flex justify-end' : 'flex justify-start';
+                const b = document.createElement('div');
+                b.className = rol === 'usuario'
+                    ? 'bg-primario text-white px-4 py-2.5 rounded-2xl rounded-br-sm max-w-[85%] shadow-sm leading-relaxed'
+                    : 'bg-white text-gray-800 border border-gray-200 px-4 py-2.5 rounded-2xl rounded-bl-sm max-w-[88%] shadow-sm leading-relaxed';
+                b.innerHTML = escHtml(texto).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                w.appendChild(b);
+                listaMensajes.appendChild(w);
+                listaMensajes.scrollTop = listaMensajes.scrollHeight;
+            }
+
+            function actualizarWa(tema) {
+                if (!CLINICA_WA || !linkWaCita || !paciente) return;
+                const txt = `Hola ${CLINICA_NOMBRE}, soy ${paciente.nombre}. Conversé con su asistente virtual y deseo agendar una valoración sobre: ${tema || 'ortodoncia'}`;
+                linkWaCita.href = `https://wa.me/${CLINICA_WA}?text=${encodeURIComponent(txt)}`;
+            }
+
+            function activarVistaChat(esNuevo) {
+                pasoRegistro.classList.add('hidden');
+                pasoChat.classList.remove('hidden');
+                if (listaMensajes.children.length === 0) {
+                    const saludo = `¡Hola **${paciente.nombre}**! Soy el asistente de **${CLINICA_NOMBRE}**. ¿Sobre qué tratamiento o cita te gustaría consultar hoy?`;
+                    agregarMsg('asistente', saludo);
+                    historial.push({ rol: 'asistente', texto: saludo });
+                }
+                actualizarWa('información de valoración');
+                if (esNuevo && consultaPendiente) {
+                    const tmp = consultaPendiente;
+                    consultaPendiente = '';
+                    enviarConsulta(tmp);
+                }
+            }
+
+            async function enviarConsulta(texto) {
+                if (!texto || enviando) return;
+                enviando = true;
+                btnSend.disabled = true;
+                agregarMsg('usuario', texto);
+                historial.push({ rol: 'usuario', texto });
+
+                const tid = 't-' + Date.now();
+                const tw = document.createElement('div');
+                tw.id = tid;
+                tw.className = 'flex justify-start';
+                tw.innerHTML = '<div class="bg-white border border-gray-200 px-4 py-2 rounded-2xl text-xs text-gray-400 italic">Escribiendo...</div>';
+                listaMensajes.appendChild(tw);
+                listaMensajes.scrollTop = listaMensajes.scrollHeight;
+
+                try {
+                    const res = await fetch(`/api/c/${SLUG}/mensaje`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ mensaje: texto, historial: historial.slice(-8), paciente })
+                    });
+                    const data = await res.json();
+                    const el = document.getElementById(tid);
+                    if (el) el.remove();
+                    if (data.ok && data.respuesta) {
+                        agregarMsg('asistente', data.respuesta);
+                        historial.push({ rol: 'asistente', texto: data.respuesta });
+                        actualizarWa(texto);
+                    } else {
+                        agregarMsg('asistente', data.error || 'No pude responder en este momento.');
+                    }
+                } catch (e) {
+                    const el = document.getElementById(tid);
+                    if (el) el.remove();
+                    agregarMsg('asistente', 'Error de conexión. Intenta nuevamente.');
+                } finally {
+                    enviando = false;
+                    btnSend.disabled = false;
+                    inputMsg.focus();
+                }
+            }
+
+            formReg.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                errReg.classList.add('hidden');
+                btnReg.disabled = true;
+                btnReg.textContent = 'Ingresando...';
+                try {
+                    const res = await fetch(`/api/c/${SLUG}/registro`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            nombre: document.getElementById('pacNombre').value.trim(),
+                            telefono: document.getElementById('pacTelefono').value.trim(),
+                            motivo: consultaPendiente
+                        })
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.ok) {
+                        errReg.textContent = data.error || 'Verifica tus datos.';
+                        errReg.classList.remove('hidden');
+                        return;
+                    }
+                    paciente = data.paciente;
+                    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(paciente));
+                    activarVistaChat(true);
+                } catch (e) {
+                    errReg.textContent = 'Error de conexión.';
+                    errReg.classList.remove('hidden');
+                } finally {
+                    btnReg.disabled = false;
+                    btnReg.textContent = 'Iniciar Chat con Asistente IA';
+                }
+            });
+
+            formChat.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const t = inputMsg.value.trim();
+                if (!t) return;
+                inputMsg.value = '';
+                enviarConsulta(t);
+            });
+
+            document.querySelectorAll('.btn-servicio').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const s = btn.dataset.servicio;
+                    if (paciente) enviarConsulta(`Quisiera información sobre ${s}`);
+                    else {
+                        consultaPendiente = `Quisiera información sobre ${s}`;
+                        document.getElementById('pacNombre').focus();
+                    }
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

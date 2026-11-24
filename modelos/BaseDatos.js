@@ -1,4 +1,32 @@
 const mongoose = require('mongoose');
+const crypto = require('crypto');
+
+// ==========================================
+// HELPERS DE SEGURIDAD PARA CONTRASEÑAS (NATIVO NODE.JS)
+// ==========================================
+function hashPassword(password) {
+    const salt = crypto.randomBytes(16).toString('hex');
+    const derived = crypto.scryptSync(String(password), salt, 64).toString('hex');
+    return `${salt}:${derived}`;
+}
+
+function verificarPassword(password, storedHash) {
+    if (!storedHash || !storedHash.includes(':')) return false;
+    const [salt, key] = storedHash.split(':');
+    const derived = crypto.scryptSync(String(password), salt, 64);
+    const keyBuf = Buffer.from(key, 'hex');
+    if (derived.length !== keyBuf.length) return false;
+    return crypto.timingSafeEqual(derived, keyBuf);
+}
+
+function generarPasswordTemporal() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    let pass = 'FD-';
+    for (let i = 0; i < 6; i++) {
+        pass += chars.charAt(crypto.randomInt(0, chars.length));
+    }
+    return pass;
+}
 
 // 1. CRM DE CLIENTES Y FICHAS PROFESIONALES
 const usuarioSchema = new mongoose.Schema({
@@ -82,11 +110,58 @@ const ticketSchema = new mongoose.Schema({
 });
 const Ticket = mongoose.model('Ticket', ticketSchema);
 
+// 6. MULTI-TENANT: DOCTORES, CLÍNICAS Y UNIVERSIDADES ALIADAS
+const clinicaSchema = new mongoose.Schema({
+    slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    nombre: { type: String, required: true, trim: true },
+    tipo: { type: String, default: 'consultorio' }, // 'consultorio', 'clinica', 'universidad'
+    responsable: { type: String, default: '' },
+    telefono_whatsapp: { type: String, default: '' },
+    ciudad: { type: String, default: 'Quito' },
+    direccion: { type: String, default: '' },
+    horarios: { type: String, default: 'Lunes a Viernes 09:00 - 18:00' },
+    logo_url: { type: String, default: '' },
+    color_primario: { type: String, default: '#0b1f38' },
+    color_acento: { type: String, default: '#cda434' },
+    servicios: { type: String, default: 'Ortodoncia convencional, Autoligado estético y metálico, Alineadores invisibles, Valoración inicial' },
+    mensaje_bienvenida: { type: String, default: '¡Hola! Soy el asistente virtual del consultorio. Déjame tus datos para ayudarte con información de tratamientos y agendar tu valoración.' },
+    instrucciones_ia: { type: String, default: '' },
+    // Credenciales de acceso privado del doctor/clínica
+    usuario_acceso: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    password_hash: { type: String, required: true },
+    debe_cambiar_password: { type: Boolean, default: true },
+    activo: { type: Boolean, default: true },
+    // Espacios reservados para Fase 3B (WhatsApp Cloud API propia opcional)
+    whatsapp_api_phone_id: { type: String, default: '' },
+    whatsapp_api_token: { type: String, default: '' },
+    fecha_creacion: { type: Date, default: Date.now }
+});
+const Clinica = mongoose.model('Clinica', clinicaSchema);
+
+// 7. MULTI-TENANT: PACIENTES CAPTURADOS POR CADA CLÍNICA (AISLADOS DE TU CRM B2B)
+const pacienteClinicaSchema = new mongoose.Schema({
+    clinica_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Clinica', required: true, index: true },
+    clinica_slug: { type: String, required: true, index: true },
+    nombre: { type: String, required: true, trim: true },
+    telefono: { type: String, required: true, trim: true },
+    motivo: { type: String, default: '' },
+    resumen_ia: { type: String, default: '' },
+    estado: { type: String, default: 'nuevo' }, // 'nuevo', 'contactado', 'agendado', 'descartado'
+    notas: { type: String, default: '' },
+    fecha: { type: Date, default: Date.now }
+});
+const PacienteClinica = mongoose.model('PacienteClinica', pacienteClinicaSchema);
+
 module.exports = {
     Usuario,
     Solicitud,
     Producto,
     Campana,
     Ticket,
-    inicializarCatalogo
+    Clinica,
+    PacienteClinica,
+    inicializarCatalogo,
+    hashPassword,
+    verificarPassword,
+    generarPasswordTemporal
 };

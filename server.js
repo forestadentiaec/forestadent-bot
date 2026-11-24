@@ -1,4 +1,4 @@
-require('dotenv').config();
+ require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const mongoose = require('mongoose');
@@ -39,11 +39,15 @@ mongoose.connect(process.env.MONGO_URI)
 const rutasWeb = require('./rutas/web');
 app.use('/', rutasWeb);
 
-// B. Rutas de la Torre de Control (Con Candado)
+// B. Rutas Multi-Tenant (Páginas públicas /c/:slug + Panel privado /mi-clinica)
+const rutasClinicasPublico = require('./rutas/clinicas_publico');
+app.use('/', rutasClinicasPublico);
+
+// C. Rutas de la Torre de Control (Con Candado)
 const rutasAdmin = require('./rutas/admin');
 app.use('/', rutasAdmin);
 
-// C. Rutas del Bot de WhatsApp (IA y Webhook)
+// D. Rutas del Bot de WhatsApp (IA y Webhook)
 const rutasBot = require('./rutas/bot');
 app.use('/', rutasBot);
 

@@ -79,5 +79,6 @@ router.use(require('./admin_inventario'));
 router.use(require('./admin_crm'));
 router.use(require('./admin_broadcast'));
 router.use(require('./admin_catalogo'));
+router.use(require('./admin_clinicas'));
 
-module.exports = router;
+module.exports = router; 

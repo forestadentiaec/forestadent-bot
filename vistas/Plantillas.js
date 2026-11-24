@@ -41,6 +41,7 @@ const menuNavegacion = `
         <a href="/admin/dashboard" class="px-3 py-2 rounded-md text-xs font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition shadow-sm">📊 Dashboard</a>
         <a href="/admin" class="px-3 py-2 rounded-md text-xs font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition shadow-sm">📦 Pedidos</a>
         <a href="/admin/clientes" class="px-3 py-2 rounded-md text-xs font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition shadow-sm">👥 CRM</a>
+        <a href="/admin/clinicas" class="px-3 py-2 rounded-md text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition shadow-sm">🏥 Clínicas IA</a>
         <a href="/admin/broadcast" class="px-3 py-2 rounded-md text-xs font-bold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 transition shadow-sm">📢 Broadcast</a>
         <a href="/admin/inventario" class="px-3 py-2 rounded-md text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition shadow-sm">📦 Inventario IA</a>
         <a href="/admin/catalogo" class="px-3 py-2 rounded-md text-xs font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition shadow-sm">⚙️ Catálogo</a>
@@ -56,7 +57,7 @@ const menuNavegacion = `
         links.forEach(link => {
             if (link.getAttribute('href') === currentPath) {
                 // 1. Le quitamos los colores de "apagado"
-                link.classList.remove('bg-gray-50', 'text-gray-600', 'bg-green-50', 'text-green-700', 'bg-blue-50', 'text-blue-700', 'hover:bg-gray-100', 'hover:bg-green-100', 'hover:bg-blue-100');
+                link.classList.remove('bg-gray-50', 'text-gray-600', 'bg-green-50', 'text-green-700', 'bg-blue-50', 'text-blue-700', 'bg-amber-50', 'text-amber-800', 'hover:bg-gray-100', 'hover:bg-green-100', 'hover:bg-blue-100', 'hover:bg-amber-100');
                 
                 // 2. Le ponemos el color ForestaBlack para marcarlo como activo
                 link.classList.add('bg-forestaBlack', 'text-white', 'border-forestaBlack', 'shadow-md');
