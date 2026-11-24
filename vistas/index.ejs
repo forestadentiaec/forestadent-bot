@@ -3,266 +3,965 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forestadent Ecuador | Portal Oficial B2B</title>
-    <!-- Tailwind CSS y FontAwesome -->
+    <title>Forestadent Ecuador | Precisión Alemana en Ortodoncia B2B</title>
+    <meta name="description" content="Representación oficial de Forestadent en Ecuador con 11 años de trayectoria. Brackets, autoligado, anclaje esquelético OrthoEasy, expansión Hyrax y ortodoncia digital Made in Black Forest.">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
         body { font-family: 'Montserrat', sans-serif; scroll-behavior: smooth; }
         .bg-forestadent { background-color: #0b1f38; }
+        .bg-forestadent-dark { background-color: #071426; }
+        .text-forestadent { color: #0b1f38; }
         .text-gold { color: #cda434; }
         .bg-gold { background-color: #cda434; }
         .border-gold { border-color: #cda434; }
-        .hero-pattern { background-image: linear-gradient(rgba(11, 31, 56, 0.92), rgba(11, 31, 56, 0.92)), url('https://images.unsplash.com/photo-1606811841689-23dfddce3e95?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'); background-size: cover; background-position: center; }
+        .hero-pattern {
+            background-image: linear-gradient(120deg, rgba(7, 20, 38, 0.94), rgba(11, 31, 56, 0.86)),
+                              url('https://images.unsplash.com/photo-1606811841689-23dfddce3e95?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80');
+            background-size: cover;
+            background-position: center;
+        }
+        .chat-scroll::-webkit-scrollbar { width: 6px; }
+        .chat-scroll::-webkit-scrollbar-thumb { background-color: rgba(11, 31, 56, 0.25); border-radius: 9999px; }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(205, 164, 52, 0.65); }
+            70% { transform: scale(1); box-shadow: 0 0 0 14px rgba(205, 164, 52, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(205, 164, 52, 0); }
+        }
+        .pulse-gold { animation: pulse-ring 2.6s infinite; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="bg-gray-50 text-gray-800 antialiased">
 
-    <!-- Navbar Superior -->
-    <nav class="bg-forestadent text-white shadow-xl fixed w-full z-50 border-b border-gray-800">
+    <!-- ========================================== -->
+    <!-- BARRA DE NAVEGACIÓN CORPORATIVA            -->
+    <!-- ========================================== -->
+    <nav class="bg-forestadent/95 backdrop-blur-md text-white shadow-xl fixed w-full z-40 border-b border-white/10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-20 items-center">
+                <!-- Logo Oficial Forestadent -->
                 <div class="flex items-center space-x-3">
-                    <!-- Tu logo oficial cargado desde la carpeta public -->
                     <a href="#inicio" class="flex items-center">
-                        <img src="/logo-light.png" alt="Forestadent Ecuador" class="h-10 w-auto object-contain">
+                        <img src="/logo-vector-forestadent.webp" alt="Forestadent Ecuador" class="h-10 sm:h-11 w-auto object-contain">
                     </a>
-                    <span class="hidden sm:inline-block text-xs text-gray-300 border-l border-gray-600 pl-3 uppercase tracking-wider">Ecuador B2B</span>
+                    <span class="hidden sm:inline-block text-[11px] font-semibold text-gray-300 border-l border-gray-600 pl-3 uppercase tracking-widest">
+                        Ecuador · Oficial B2B
+                    </span>
                 </div>
-                <div class="hidden md:flex items-center space-x-8 text-sm font-medium">
-                    <a href="#inicio" class="hover:text-gold transition">Inicio</a>
-                    <a href="#trayectoria" class="hover:text-gold transition">Made in Black Forest</a>
-                    <a href="#catalogo" class="hover:text-gold transition">Alta Rotación</a>
-                    <a href="#soporte" class="hover:text-gold transition">Oráculo Clínico</a>
-                    <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20deseo%20asesoría%20comercial" target="_blank" class="bg-gold text-forestadent px-5 py-2.5 rounded font-bold hover:bg-yellow-500 transition shadow-md">
-                        <i class="fab fa-whatsapp mr-2 text-base"></i> Canal Directo
-                    </a>
+
+                <!-- Menú Escritorio -->
+                <div class="hidden lg:flex items-center space-x-7 text-sm font-medium">
+                    <a href="#especialidades" class="hover:text-gold transition">Especialidades</a>
+                    <a href="#catalogo" class="hover:text-gold transition">Catálogo</a>
+                    <a href="#posgrados" class="hover:text-gold transition">Posgrados</a>
+                    <a href="#ecosistema-ia" class="hover:text-gold transition">Ecosistema IA</a>
+                    <a href="#tradicion" class="hover:text-gold transition">Black Forest</a>
+                    <button type="button" id="btnAbrirChatNav" class="bg-gold text-forestadent px-5 py-2.5 rounded-lg font-bold hover:bg-yellow-500 transition shadow-md flex items-center space-x-2">
+                        <i class="fas fa-sparkles"></i>
+                        <span>Asistente IA</span>
+                    </button>
+                </div>
+
+                <!-- Botón Menú Móvil -->
+                <div class="lg:hidden flex items-center space-x-3">
+                    <button type="button" id="btnAbrirChatMovilTop" class="bg-gold text-forestadent px-3 py-2 rounded-lg text-xs font-bold">
+                        <i class="fas fa-robot mr-1"></i> IA
+                    </button>
+                    <button type="button" id="btnMenuMovil" class="text-gray-200 hover:text-gold p-2" aria-label="Abrir menú">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
                 </div>
             </div>
+        </div>
+
+        <!-- Menú Desplegable Móvil -->
+        <div id="menuMovil" class="hidden lg:hidden bg-forestadent-dark border-t border-white/10 px-4 pt-3 pb-5 space-y-2 text-sm">
+            <a href="#especialidades" class="block py-2 text-gray-200 hover:text-gold">Especialidades Clínicas</a>
+            <a href="#catalogo" class="block py-2 text-gray-200 hover:text-gold">Catálogo en Vivo</a>
+            <a href="#posgrados" class="block py-2 text-gray-200 hover:text-gold">Posgrados y Universidades</a>
+            <a href="#ecosistema-ia" class="block py-2 text-gray-200 hover:text-gold">Ecosistema IA para Clínicas</a>
+            <a href="#tradicion" class="block py-2 text-gray-200 hover:text-gold">Made in Black Forest</a>
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section id="inicio" class="hero-pattern text-white pt-36 pb-24 lg:pt-48 lg:pb-32">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <span class="inline-block bg-gold/20 text-gold border border-gold/40 text-xs font-semibold px-4 py-1.5 rounded-full uppercase tracking-widest mb-6">11 Años de Representación Oficial en Ecuador</span>
-            <h1 class="text-4xl lg:text-6xl font-extrabold mb-6 tracking-tight leading-tight">Ingeniería Alemana de Precisión<br><span class="text-gold">para Ortodoncistas de Élite</span></h1>
-            <p class="text-lg lg:text-xl text-gray-300 mb-10 max-w-3xl mx-auto leading-relaxed">Suministro directo, stock garantizado de alta rotación y soporte clínico automatizado para clínicas, especialistas y posgrados universitarios.</p>
-            <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-                <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20quiero%20cotizar%20materiales" target="_blank" class="bg-gold text-forestadent font-bold px-8 py-4 rounded-lg shadow-xl hover:bg-yellow-500 transition text-center">Cotizar por WhatsApp</a>
-                <a href="#catalogo" class="border border-gray-400 text-white font-semibold px-8 py-4 rounded-lg hover:bg-white hover:text-forestadent transition text-center">Explorar Productos VIP</a>
+    <!-- ========================================== -->
+    <!-- HERO SECTION                               -->
+    <!-- ========================================== -->
+    <section id="inicio" class="hero-pattern text-white pt-32 pb-20 lg:pt-44 lg:pb-28 relative overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="max-w-4xl mx-auto text-center">
+                <span class="inline-flex items-center space-x-2 bg-gold/15 text-gold border border-gold/40 text-xs font-semibold px-4 py-1.5 rounded-full uppercase tracking-widest mb-6">
+                    <i class="fas fa-award"></i>
+                    <span>11 Años de Representación Oficial en Ecuador</span>
+                </span>
+                <h1 class="text-3xl sm:text-5xl lg:text-6xl font-extrabold mb-6 tracking-tight leading-tight">
+                    Precisión Alemana en Ortodoncia<br>
+                    <span class="text-gold">Made in Black Forest</span>
+                </h1>
+                <p class="text-base sm:text-lg lg:text-xl text-gray-300 mb-10 max-w-3xl mx-auto leading-relaxed">
+                    Nacidos en la tradición joyera y relojera de Pforzheim, Alemania. Suministramos a ortodoncistas, clínicas y posgrados universitarios en Ecuador con stock local de alta rotación y asesoría clínica asistida por Inteligencia Artificial.
+                </p>
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
+                    <button type="button" id="btnAbrirChatHero" class="bg-gold text-forestadent font-bold px-8 py-4 rounded-xl shadow-xl hover:bg-yellow-500 transition flex items-center justify-center space-x-2">
+                        <i class="fas fa-comments"></i>
+                        <span>Cotizar o Consultar con Asistente IA</span>
+                    </button>
+                    <a href="#catalogo" class="border border-white/40 text-white font-semibold px-8 py-4 rounded-xl hover:bg-white hover:text-forestadent transition flex items-center justify-center space-x-2">
+                        <span>Explorar Catálogo</span>
+                        <i class="fas fa-arrow-down text-xs"></i>
+                    </a>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- Barra de Estadísticas de Confianza -->
-    <section class="bg-forestadent border-t border-b border-gray-800 text-white py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
-                <p class="text-3xl lg:text-4xl font-bold text-gold">11+ K</p>
-                <p class="text-xs text-gray-400 uppercase tracking-wider mt-1">Años en el mercado ecuatoriano</p>
+    <!-- ========================================== -->
+    <!-- BARRA DE INDICADORES DE CONFIANZA          -->
+    <!-- ========================================== -->
+    <section class="bg-forestadent-dark text-white border-y border-white/10 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+            <div class="p-2">
+                <p class="text-3xl lg:text-4xl font-extrabold text-gold">11+ Años</p>
+                <p class="text-xs text-gray-400 uppercase tracking-wider mt-1">Respaldo Oficial en Ecuador</p>
             </div>
-            <div>
-                <p class="text-3xl lg:text-4xl font-bold text-white">100%</p>
-                <p class="text-xs text-gray-400 uppercase tracking-wider mt-1">Original Made in Pforzheim</p>
+            <div class="p-2">
+                <p class="text-3xl lg:text-4xl font-extrabold text-white">+115 Años</p>
+                <p class="text-xs text-gray-400 uppercase tracking-wider mt-1">Ingeniería en Pforzheim</p>
             </div>
-            <div>
-                <p class="text-3xl lg:text-4xl font-bold text-gold">24/7</p>
-                <p class="text-xs text-gray-400 uppercase tracking-wider mt-1">Asistencia con IA y Catálogo VIP</p>
+            <div class="p-2">
+                <p class="text-3xl lg:text-4xl font-extrabold text-gold">100%</p>
+                <p class="text-xs text-gray-400 uppercase tracking-wider mt-1">Calidad Alemana Certificada</p>
             </div>
-            <div>
-                <p class="text-3xl lg:text-4xl font-bold text-white">Nacional</p>
-                <p class="text-xs text-gray-400 uppercase tracking-wider mt-1">Despachos a todo el país</p>
+            <div class="p-2">
+                <p class="text-3xl lg:text-4xl font-extrabold text-white">24/7</p>
+                <p class="text-xs text-gray-400 uppercase tracking-wider mt-1">Atención y Cotización con IA</p>
             </div>
         </div>
     </section>
 
-    <!-- Sección Trayectoria / Made in Black Forest -->
-    <section id="trayectoria" class="py-24 bg-white">
+    <!-- ========================================== -->
+    <!-- MUNDOS DE PRODUCTO / ESPECIALIDADES        -->
+    <!-- ========================================== -->
+    <section id="especialidades" class="py-20 lg:py-24 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <span class="text-xs font-bold text-gold uppercase tracking-widest bg-gold/10 px-3 py-1 rounded-full">Ortodoncia de la A a la Z</span>
+                <h2 class="text-3xl lg:text-4xl font-bold text-forestadent mt-4">Nuestras Líneas de Tratamiento</h2>
+                <p class="text-gray-500 mt-3 text-sm sm:text-base">
+                    Desde sistemas convencionales y autoligado de precisión micrométrica hasta anclaje esquelético y soluciones para flujo digital.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Pilar 1 -->
+                <div class="bg-gray-50 rounded-2xl p-7 border border-gray-200 hover:border-gold hover:shadow-lg transition group">
+                    <div class="w-12 h-12 rounded-xl bg-forestadent text-gold flex items-center justify-center text-xl mb-5 group-hover:scale-105 transition">
+                        <i class="fas fa-tooth"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-forestadent mb-2">Ortodoncia Clásica</h3>
+                    <p class="text-sm text-gray-600 leading-relaxed mb-4">
+                        Brackets metálicos de perfil bajo (Mini Sprint, Easy Eco) y soluciones estéticas con superficies micropulidas y bases de alta retención.
+                    </p>
+                    <button type="button" class="btn-consultar-linea text-xs font-bold text-forestadent hover:text-gold uppercase tracking-wider inline-flex items-center" data-tema="Ortodoncia Clásica y Brackets Metálicos">
+                        Consultar línea <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+
+                <!-- Pilar 2 -->
+                <div class="bg-gray-50 rounded-2xl p-7 border border-gray-200 hover:border-gold hover:shadow-lg transition group">
+                    <div class="w-12 h-12 rounded-xl bg-forestadent text-gold flex items-center justify-center text-xl mb-5 group-hover:scale-105 transition">
+                        <i class="fas fa-gem"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-forestadent mb-2">Autoligado Avanzado</h3>
+                    <p class="text-sm text-gray-600 leading-relaxed mb-4">
+                        Sistemas BioQuick® de 5ta generación y Quicklear® cerámicos. Control tridimensional, baja fricción y máxima comodidad clínica.
+                    </p>
+                    <button type="button" class="btn-consultar-linea text-xs font-bold text-forestadent hover:text-gold uppercase tracking-wider inline-flex items-center" data-tema="Brackets de Autoligado BioQuick y Quicklear">
+                        Consultar línea <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+
+                <!-- Pilar 3 -->
+                <div class="bg-gray-50 rounded-2xl p-7 border border-gray-200 hover:border-gold hover:shadow-lg transition group">
+                    <div class="w-12 h-12 rounded-xl bg-forestadent text-gold flex items-center justify-center text-xl mb-5 group-hover:scale-105 transition">
+                        <i class="fas fa-crosshairs"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-forestadent mb-2">Anclaje & Expansión</h3>
+                    <p class="text-sm text-gray-600 leading-relaxed mb-4">
+                        Mini implantes OrthoEasy® codificados por color para seguridad clínica y tornillos de disyunción Hyrax de máxima estabilidad.
+                    </p>
+                    <button type="button" class="btn-consultar-linea text-xs font-bold text-forestadent hover:text-gold uppercase tracking-wider inline-flex items-center" data-tema="Mini Implantes OrthoEasy y Tornillos Hyrax">
+                        Consultar línea <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+
+                <!-- Pilar 4 -->
+                <div class="bg-gray-50 rounded-2xl p-7 border border-gray-200 hover:border-gold hover:shadow-lg transition group">
+                    <div class="w-12 h-12 rounded-xl bg-forestadent text-gold flex items-center justify-center text-xl mb-5 group-hover:scale-105 transition">
+                        <i class="fas fa-cubes"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-forestadent mb-2">Ortodoncia Digital & 3D</h3>
+                    <p class="text-sm text-gray-600 leading-relaxed mb-4">
+                        Láminas de termoformado Track, alineadores FAS® y ecosistema de impresión 3D para clínicas que evolucionan hacia el flujo digital.
+                    </p>
+                    <button type="button" class="btn-consultar-linea text-xs font-bold text-forestadent hover:text-gold uppercase tracking-wider inline-flex items-center" data-tema="Ortodoncia Digital, Láminas Track y Flujo 3D">
+                        Consultar línea <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- CATÁLOGO EN VIVO CON BUSCADOR Y FILTROS    -->
+    <!-- ========================================== -->
+    <section id="catalogo" class="py-20 lg:py-24 bg-gray-50 border-t border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <span class="text-xs font-bold text-gold uppercase tracking-widest bg-gold/10 px-3 py-1 rounded-full">Inventario Conectado en Tiempo Real</span>
+                <h2 class="text-3xl lg:text-4xl font-bold text-forestadent mt-4">Catálogo Estratégico de Alta Rotación</h2>
+                <p class="text-gray-500 mt-3 text-sm sm:text-base">
+                    Busca por nombre o código y solicita tu cotización al instante con nuestro Asistente IA.
+                </p>
+            </div>
+
+            <!-- Barra de Búsqueda y Filtros -->
+            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-200 mb-10">
+                <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div class="relative w-full md:w-96">
+                        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input
+                            type="text"
+                            id="buscadorCatalogo"
+                            placeholder="Buscar bracket, implante, tornillo o código..."
+                            class="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-forestadent focus:ring-2 focus:ring-forestadent/10"
+                        >
+                    </div>
+                    <div class="flex flex-wrap gap-2 justify-center md:justify-end" id="contenedorFiltros">
+                        <button type="button" class="filtro-cat px-4 py-2 rounded-lg text-xs font-bold bg-forestadent text-white transition" data-categoria="TODAS">
+                            Todos
+                        </button>
+                        <% categorias.forEach(function(cat) { %>
+                            <button type="button" class="filtro-cat px-4 py-2 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition" data-categoria="<%= cat.toLowerCase() %>">
+                                <%= cat %>
+                            </button>
+                        <% }); %>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grid Dinámico de Productos desde MongoDB -->
+            <div id="gridProductos" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
+                <% if (productos && productos.length > 0) { %>
+                    <% productos.forEach(function(p) { %>
+                        <div
+                            class="tarjeta-producto bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-xl hover:border-gold/60 transition flex flex-col justify-between"
+                            data-nombre="<%= (p.nombre || '').toLowerCase() %>"
+                            data-codigo="<%= (p.codigo || '').toLowerCase() %>"
+                            data-categoria="<%= (p.categoria || '').toLowerCase() %>"
+                        >
+                            <div class="p-6">
+                                <div class="flex items-center justify-between gap-2 mb-3">
+                                    <span class="text-[11px] font-bold uppercase tracking-wider text-forestadent bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-md">
+                                        <%= p.categoria || 'Ortodoncia' %>
+                                    </span>
+                                    <% if (p.codigo) { %>
+                                        <span class="text-[11px] font-mono text-gray-400">REF: <%= p.codigo %></span>
+                                    <% } %>
+                                </div>
+
+                                <h3 class="font-bold text-lg text-forestadent mb-2 leading-snug"><%= p.nombre %></h3>
+                                <p class="text-xs text-gray-500 mb-5">
+                                    Presentación: <span class="font-semibold text-gray-700"><%= p.empaque || 'Unidad / Caso' %></span>
+                                </p>
+
+                                <div class="flex items-baseline justify-between border-t border-gray-100 pt-4">
+                                    <div>
+                                        <% if (typeof p.precio === 'number' && p.precio > 0) { %>
+                                            <span class="text-2xl font-extrabold text-forestadent">$<%= p.precio.toFixed(2) %></span>
+                                            <span class="text-xs text-gray-400 ml-1">ref.</span>
+                                        <% } else { %>
+                                            <span class="text-lg font-bold text-forestadent">Precio bajo cotización</span>
+                                        <% } %>
+                                    </div>
+                                    <% if (typeof p.stock_actual === 'number' && p.stock_actual > 0) { %>
+                                        <span class="inline-flex items-center text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
+                                            <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5"></span> En Stock
+                                        </span>
+                                    <% } else { %>
+                                        <span class="inline-flex items-center text-xs font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full">
+                                            Bajo pedido
+                                        </span>
+                                    <% } %>
+                                </div>
+                            </div>
+
+                            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                                <button
+                                    type="button"
+                                    class="btn-cotizar-producto w-full text-sm font-bold text-forestadent hover:text-gold flex items-center justify-between transition"
+                                    data-producto-nombre="<%= p.nombre %>"
+                                    data-producto-codigo="<%= p.codigo || '' %>"
+                                >
+                                    <span>Cotizar con Asistente IA</span>
+                                    <i class="fas fa-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    <% }); %>
+                <% } else { %>
+                    <div class="col-span-full bg-white rounded-2xl p-10 text-center border border-gray-200">
+                        <i class="fas fa-box-open text-4xl text-gold mb-3"></i>
+                        <h3 class="text-lg font-bold text-forestadent">Catálogo completo disponible bajo consulta</h3>
+                        <p class="text-sm text-gray-500 mt-1 mb-5">Consulta precios, promociones y stock inmediato directamente en nuestro chat inteligente.</p>
+                        <button type="button" class="btn-consultar-linea bg-forestadent text-white px-6 py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition" data-tema="Lista completa de precios y disponibilidad">
+                            Solicitar catálogo ahora
+                        </button>
+                    </div>
+                <% } %>
+            </div>
+
+            <!-- Mensaje sin resultados en búsqueda -->
+            <div id="sinResultados" class="hidden bg-white rounded-2xl p-10 text-center border border-gray-200 mt-6">
+                <p class="text-forestadent font-bold mb-1">No encontramos ese código o referencia en la vista rápida.</p>
+                <p class="text-sm text-gray-500 mb-4">Manejamos todo el portafolio alemán de Forestadent bajo pedido directo.</p>
+                <button type="button" id="btnConsultarNoEncontrado" class="bg-gold text-forestadent font-bold px-6 py-2.5 rounded-lg text-sm hover:bg-yellow-500 transition">
+                    Preguntar disponibilidad al Asistente IA
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- ZONA EXCLUSIVA POSGRADOS Y UNIVERSIDADES   -->
+    <!-- ========================================== -->
+    <section id="posgrados" class="py-20 bg-white border-t border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-gradient-to-br from-[#0b1f38] to-[#132f54] rounded-3xl p-8 sm:p-12 lg:p-14 text-white shadow-2xl grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+                <div class="lg:col-span-7">
+                    <span class="inline-block text-xs font-bold uppercase tracking-widest bg-gold/20 text-gold border border-gold/40 px-3 py-1 rounded-full mb-4">
+                        Convenios Académicos Ecuador
+                    </span>
+                    <h2 class="text-2xl sm:text-4xl font-extrabold mb-4 leading-tight">
+                        Tarifas Especiales para Posgrados y Clínicas Universitarias
+                    </h2>
+                    <p class="text-gray-300 text-sm sm:text-base leading-relaxed mb-6">
+                        Acompañamos la formación de los futuros especialistas en ortodoncia del Ecuador con kits preferenciales por volumen, disponibilidad programada para inicios de semestre y soporte técnico directo.
+                    </p>
+                    <ul class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-200 mb-8">
+                        <li class="flex items-center space-x-2"><i class="fas fa-check-circle text-gold"></i><span>Paquetes Mini Sprint Face por volumen</span></li>
+                        <li class="flex items-center space-x-2"><i class="fas fa-check-circle text-gold"></i><span>Precios posgrado en BioQuick 5ta Gen</span></li>
+                        <li class="flex items-center space-x-2"><i class="fas fa-check-circle text-gold"></i><span>Kits clínicos de Mini Implantes OrthoEasy</span></li>
+                        <li class="flex items-center space-x-2"><i class="fas fa-check-circle text-gold"></i><span>Despachos coordinados a nivel nacional</span></li>
+                    </ul>
+                    <button type="button" class="btn-consultar-linea bg-gold text-forestadent font-bold px-7 py-3.5 rounded-xl hover:bg-yellow-500 transition shadow-lg" data-tema="Promociones y tarifas para Posgrado / Universidad">
+                        Solicitar Tarifa de Posgrado
+                    </button>
+                </div>
+
+                <div class="lg:col-span-5">
+                    <div class="bg-white/10 backdrop-blur-sm border border-white/15 rounded-2xl p-6 sm:p-8 space-y-5">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-xl bg-gold text-forestadent flex items-center justify-center text-xl flex-shrink-0">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg">Programa Académico</h3>
+                                <p class="text-xs text-gray-300">Respaldo continuo durante toda tu especialidad.</p>
+                            </div>
+                        </div>
+                        <div class="border-t border-white/15 pt-4 text-sm text-gray-200 space-y-2">
+                            <p><strong class="text-gold">1.</strong> Identifícate en el Asistente IA indicando tu universidad o programa de posgrado.</p>
+                            <p><strong class="text-gold">2.</strong> Recibe cotización inmediata con precios académicos preferenciales.</p>
+                            <p><strong class="text-gold">3.</strong> Coordina entrega rápida en Quito o envío asegurado a cualquier ciudad del país.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- ECOSISTEMA IA PARA CLÍNICAS ALIADAS        -->
+    <!-- ========================================== -->
+    <section id="ecosistema-ia" class="py-20 bg-gray-50 border-t border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 <div>
-                    <h2 class="text-3xl lg:text-4xl font-bold text-forestadent mb-6 leading-snug">Tradición y Know-How desde la Selva Negra</h2>
-                    <p class="text-gray-600 mb-4 leading-relaxed">Con más de un siglo de historia evolucionando desde la alta precisión de la industria relojera alemana en Pforzheim, Forestadent combina la artesanía tradicional con la innovación tecnológica más avanzada.</p>
-                    <p class="text-gray-600 mb-8 leading-relaxed">En Ecuador, garantizamos que cada bracket, tornillo de disyunción y línea de alineadores cumpla con los estándares rigurosos que exige la ortodoncia contemporánea.</p>
-                    
-                    <div class="space-y-4">
-                        <div class="flex items-start space-x-4">
-                            <div class="bg-gold/10 p-3 rounded-lg text-gold font-bold"><i class="fas fa-microscope text-xl"></i></div>
+                    <span class="text-xs font-bold text-gold uppercase tracking-widest bg-gold/10 px-3 py-1 rounded-full">
+                        Innovación Comercial Exclusiva
+                    </span>
+                    <h2 class="text-3xl lg:text-4xl font-bold text-forestadent mt-4 mb-5 leading-tight">
+                        Lleva la Inteligencia Artificial a tu Propio Consultorio o Clínica
+                    </h2>
+                    <p class="text-gray-600 text-sm sm:text-base leading-relaxed mb-5">
+                        En Forestadent Ecuador no solo entregamos aparatología alemana de clase mundial: impulsamos el crecimiento de nuestros clientes aliados con un <strong>Asistente Comercial con IA personalizado</strong> para tu clínica, consultorio o posgrado.
+                    </p>
+                    <div class="space-y-4 mb-8">
+                        <div class="flex items-start space-x-3">
+                            <div class="w-8 h-8 rounded-lg bg-forestadent text-gold flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fas fa-globe text-sm"></i></div>
                             <div>
-                                <h3 class="font-bold text-forestadent text-lg">Superficies de Calidad Superior</h3>
-                                <p class="text-sm text-gray-500">Tecnología de micropulido y bases patentadas para una retención biológica óptima.</p>
+                                <h4 class="font-bold text-forestadent text-sm">Página Web con Chat IA 24/7</h4>
+                                <p class="text-xs sm:text-sm text-gray-500">Con el logo, servicios, horarios y ubicación de tu clínica para atender y capturar pacientes día y noche.</p>
                             </div>
                         </div>
-                        <div class="flex items-start space-x-4">
-                            <div class="bg-gold/10 p-3 rounded-lg text-gold font-bold"><i class="fas fa-shipping-fast text-xl"></i></div>
+                        <div class="flex items-start space-x-3">
+                            <div class="w-8 h-8 rounded-lg bg-forestadent text-gold flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fab fa-whatsapp text-sm"></i></div>
                             <div>
-                                <h3 class="font-bold text-forestadent text-lg">Disponibilidad Inmediata</h3>
-                                <p class="text-sm text-gray-500">Stock permanente en Quito de las líneas de alta rotación para entrega sin demoras.</p>
+                                <h4 class="font-bold text-forestadent text-sm">Integración a WhatsApp</h4>
+                                <p class="text-xs sm:text-sm text-gray-500">Deriva pacientes calificados listos para agendar cita o conecta opcionalmente tu línea oficial de WhatsApp API.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <div class="w-8 h-8 rounded-lg bg-forestadent text-gold flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fas fa-shield-alt text-sm"></i></div>
+                            <div>
+                                <h4 class="font-bold text-forestadent text-sm">Panel Privado de Control</h4>
+                                <p class="text-xs sm:text-sm text-gray-500">Acceso exclusivo con tus propias credenciales para gestionar los prospectos de tu consultorio.</p>
                             </div>
                         </div>
                     </div>
+                    <button type="button" id="btnSolicitarPanelIA" class="bg-forestadent text-white font-bold px-7 py-3.5 rounded-xl hover:bg-slate-800 transition shadow-lg inline-flex items-center space-x-2">
+                        <i class="fas fa-rocket text-gold"></i>
+                        <span>Solicitar mi Panel IA como Cliente Forestadent</span>
+                    </button>
                 </div>
-                
-                <div class="bg-gray-100 p-8 lg:p-12 rounded-2xl shadow-inner border border-gray-200">
-                    <h3 class="text-2xl font-bold text-forestadent mb-4">Innovación Digital & Asistencia</h3>
-                    <p class="text-gray-600 mb-6 text-sm leading-relaxed">Nuestra plataforma integra un ecosistema inteligente que facilita la cotización instantánea y la consulta técnica especializada para profesionales de la salud oral.</p>
-                    <div class="bg-white p-6 rounded-xl shadow border-l-4 border-gold">
-                        <p class="text-xs uppercase tracking-wider text-gray-400 font-bold mb-1">Ecosistema B2B</p>
-                        <p class="text-sm font-semibold text-forestadent">Conectamos la excelencia de los materiales alemanes con canales automatizados de respuesta rápida en WhatsApp y web.</p>
+
+                <div class="bg-white rounded-3xl p-8 shadow-xl border border-gray-200">
+                    <div class="flex items-center justify-between border-b border-gray-100 pb-4 mb-6">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-full bg-forestadent text-gold flex items-center justify-center">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-forestadent">Beneficio para Clientes Activos</p>
+                                <p class="text-xs text-emerald-600 font-semibold">Activación guiada paso a paso</p>
+                            </div>
+                        </div>
+                        <span class="text-xs font-bold bg-gold/15 text-forestadent px-3 py-1 rounded-full">B2B Plus</span>
+                    </div>
+                    <div class="space-y-4 text-sm text-gray-600">
+                        <div class="p-4 rounded-xl bg-gray-50 border border-gray-100">
+                            <p class="font-bold text-forestadent mb-1">1. Solicita tu activación</p>
+                            <p class="text-xs text-gray-500">Indícanos el nombre de tu consultorio, clínica o universidad en el chat web.</p>
+                        </div>
+                        <div class="p-4 rounded-xl bg-gray-50 border border-gray-100">
+                            <p class="font-bold text-forestadent mb-1">2. Validación y credenciales temporales</p>
+                            <p class="text-xs text-gray-500">Aprobamos tu cuenta de aliado y recibirás confirmación con contraseña temporal para tu primer ingreso.</p>
+                        </div>
+                        <div class="p-4 rounded-xl bg-gray-50 border border-gray-100">
+                            <p class="font-bold text-forestadent mb-1">3. Tu asistente en marcha</p>
+                            <p class="text-xs text-gray-500">Cambia tu clave personal y comparte el enlace de tu asistente inteligente con tus pacientes.</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Catálogo de Alta Rotación -->
-    <section id="catalogo" class="py-24 bg-gray-50">
+    <!-- ========================================== -->
+    <!-- TRADICIÓN Y HERENCIA BLACK FOREST          -->
+    <!-- ========================================== -->
+    <section id="tradicion" class="py-20 bg-white border-t border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <span class="text-xs font-bold text-gold uppercase tracking-widest bg-gold/10 px-3 py-1 rounded">Inventario Disponible</span>
-                <h2 class="text-3xl lg:text-4xl font-bold text-forestadent mt-3">Productos Estrella de Alta Rotación</h2>
-                <p class="text-gray-500 mt-2 max-w-xl mx-auto">Selección directa de los sistemas más solicitados por especialistas y posgrados en el país.</p>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <!-- Card 1 -->
-                <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition flex flex-col justify-between">
-                    <div class="p-6">
-                        <span class="text-xs font-semibold text-gold bg-gold/10 px-2.5 py-1 rounded">Brackets Estéticos</span>
-                        <h3 class="font-bold text-xl text-forestadent mt-3 mb-2">Quicklear Cerámicos</h3>
-                        <p class="text-sm text-gray-500 mb-6">Autoligado pasivo (MBT/Face). Estética superior y baja fricción clínica.</p>
-                        <div class="text-2xl font-extrabold text-forestadent">$320 <span class="text-xs font-normal text-gray-400">+ IVA / Caso</span></div>
-                    </div>
-                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
-                        <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20deseo%20cotizar%20Quicklear" target="_blank" class="text-sm font-bold text-forestadent hover:text-gold flex items-center justify-between">
-                            <span>Cotizar disponibilidad</span> <i class="fas fa-arrow-right"></i>
-                        </a>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <span class="text-xs font-bold text-gold uppercase tracking-widest">Pforzheim · Selva Negra, Alemania</span>
+                    <h2 class="text-3xl lg:text-4xl font-bold text-forestadent mt-2 mb-5">Tradición Joyera Aplicada a la Ortodoncia</h2>
+                    <p class="text-gray-600 text-sm sm:text-base leading-relaxed mb-4">
+                        Desde 1907 en la Selva Negra alemana, Forestadent evolucionó desde la fabricación de piezas micrométricas para la industria joyera y relojera hasta convertirse en un referente global en más de 115 países.
+                    </p>
+                    <p class="text-gray-600 text-sm sm:text-base leading-relaxed">
+                        En Ecuador, durante más de una década, hemos respaldado a los ortodoncistas más exigentes con trazabilidad, stock local inmediato en Quito y envíos seguros a todo el país.
+                    </p>
+                </div>
+                <div class="bg-forestadent text-white rounded-3xl p-8 sm:p-10 shadow-xl relative overflow-hidden">
+                    <i class="fas fa-quote-left text-4xl text-gold/30 mb-4"></i>
+                    <p class="text-lg sm:text-xl font-medium leading-relaxed mb-6">
+                        "No pensamos en milímetros, pensamos en micrómetros. La excelencia clínica comienza en la precisión de cada superficie y cada ángulo."
+                    </p>
+                    <div class="flex items-center space-x-3 border-t border-white/15 pt-4">
+                        <span class="w-2.5 h-2.5 rounded-full bg-gold"></span>
+                        <span class="text-xs uppercase tracking-widest text-gray-300 font-semibold">Forestadent · Made in Black Forest</span>
                     </div>
                 </div>
-
-                <!-- Card 2 -->
-                <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition flex flex-col justify-between">
-                    <div class="p-6">
-                        <span class="text-xs font-semibold text-blue-800 bg-blue-100 px-2.5 py-1 rounded">Brackets Metálicos</span>
-                        <h3 class="font-bold text-xl text-forestadent mt-3 mb-2">Mini Sprint Face</h3>
-                        <p class="text-sm text-gray-500 mb-6">Diseño de perfil bajo y gran comodidad. Promociones especiales por volumen.</p>
-                        <div class="text-2xl font-extrabold text-forestadent">$100 <span class="text-xs font-normal text-gray-400">Incl. IVA / Caso</span></div>
-                        <p class="text-xs text-green-600 font-semibold mt-2">Promo Posgrado: 10 casos por $800</p>
-                    </div>
-                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
-                        <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20deseo%20cotizar%20Mini%20Sprint" target="_blank" class="text-sm font-bold text-forestadent hover:text-gold flex items-center justify-between">
-                            <span>Cotizar disponibilidad</span> <i class="fas fa-arrow-right"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Card 3 -->
-                <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition flex flex-col justify-between">
-                    <div class="p-6">
-                        <span class="text-xs font-semibold text-purple-800 bg-purple-100 px-2.5 py-1 rounded">Anclaje Esquelético</span>
-                        <h3 class="font-bold text-xl text-forestadent mt-3 mb-2">Mini Implantes Orto Easy</h3>
-                        <p class="text-sm text-gray-500 mb-6">Soluciones versátiles de anclaje absoluto (Medidas de 6, 8 y 10mm).</p>
-                        <div class="text-2xl font-extrabold text-forestadent">$156.50 <span class="text-xs font-normal text-gray-400">+ IVA / Unidad</span></div>
-                        <p class="text-xs text-green-600 font-semibold mt-2">Kit de 5 unidades a $180 (Incl. IVA)</p>
-                    </div>
-                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
-                        <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20deseo%20cotizar%20Orto%20Easy" target="_blank" class="text-sm font-bold text-forestadent hover:text-gold flex items-center justify-between">
-                            <span>Cotizar disponibilidad</span> <i class="fas fa-arrow-right"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Card 4 -->
-                <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition flex flex-col justify-between">
-                    <div class="p-6">
-                        <span class="text-xs font-semibold text-blue-800 bg-blue-100 px-2.5 py-1 rounded">Brackets Metálicos</span>
-                        <h3 class="font-bold text-xl text-forestadent mt-3 mb-2">Easy Eco Roth-MBT</h3>
-                        <p class="text-sm text-gray-500 mb-6">Eficiencia económica y rendimiento clínico garantizado para la práctica diaria.</p>
-                        <div class="text-2xl font-extrabold text-forestadent">$85 <span class="text-xs font-normal text-gray-400">Incl. IVA / Caso</span></div>
-                    </div>
-                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
-                        <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20deseo%20cotizar%20Easy%20Eco" target="_blank" class="text-sm font-bold text-forestadent hover:text-gold flex items-center justify-between">
-                            <span>Cotizar disponibilidad</span> <i class="fas fa-arrow-right"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Card 5 -->
-                <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition flex flex-col justify-between">
-                    <div class="p-6">
-                        <span class="text-xs font-semibold text-amber-800 bg-amber-100 px-2.5 py-1 rounded">Expansión</span>
-                        <h3 class="font-bold text-xl text-forestadent mt-3 mb-2">Tornillos de Disyunción Hyrax</h3>
-                        <p class="text-sm text-gray-500 mb-6">Disponibles en versiones Slim 12mm y Normal 13mm de alta estabilidad.</p>
-                        <div class="text-2xl font-extrabold text-forestadent">$28 - $38 <span class="text-xs font-normal text-gray-400">/ Unidad</span></div>
-                    </div>
-                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
-                        <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20deseo%20cotizar%20Tornillos%20Hyrax" target="_blank" class="text-sm font-bold text-forestadent hover:text-gold flex items-center justify-between">
-                            <span>Cotizar disponibilidad</span> <i class="fas fa-arrow-right"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Card 6 -->
-                <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition flex flex-col justify-between">
-                    <div class="p-6">
-                        <span class="text-xs font-semibold text-indigo-800 bg-indigo-100 px-2.5 py-1 rounded">Autoligado Avanzado</span>
-                        <h3 class="font-bold text-xl text-forestadent mt-3 mb-2">BioQuick 5ta Gen</h3>
-                        <p class="text-sm text-gray-500 mb-6">Control tridimensional insuperable. Precios especiales para estudiantes de posgrado.</p>
-                        <div class="text-2xl font-extrabold text-forestadent">$199 <span class="text-xs font-normal text-gray-400">Incl. IVA / Caso</span></div>
-                        <p class="text-xs text-green-600 font-semibold mt-2">Promo Posgrado: $155.65 + IVA</p>
-                    </div>
-                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
-                        <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20deseo%20cotizar%20BioQuick" target="_blank" class="text-sm font-bold text-forestadent hover:text-gold flex items-center justify-between">
-                            <span>Cotizar disponibilidad</span> <i class="fas fa-arrow-right"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-14 text-center">
-                <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20quiero%20el%20catalogo%20completo" target="_blank" class="inline-block bg-forestadent text-white font-bold px-8 py-4 rounded-lg shadow-lg hover:bg-slate-800 transition">Solicitar Catálogo Completo por WhatsApp</a>
             </div>
         </div>
     </section>
 
-    <!-- Sección Soporte Inteligente / Oráculo IA -->
-    <section id="soporte" class="py-24 bg-white border-t border-gray-100">
+    <!-- ========================================== -->
+    <!-- FOOTER CORPORATIVO 100% FORESTADENT ECUADOR -->
+    <!-- ========================================== -->
+    <footer class="bg-forestadent-dark text-gray-400 py-12 border-t border-white/10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-forestadent rounded-2xl text-white p-8 lg:p-16 shadow-2xl relative overflow-hidden flex flex-col lg:flex-row items-center justify-between">
-                <div class="lg:w-2/3 mb-8 lg:mb-0 z-10">
-                    <span class="text-xs font-bold text-gold uppercase tracking-widest bg-gold/20 px-3 py-1 rounded">Asistencia Técnica 24/7</span>
-                    <h2 class="text-3xl lg:text-4xl font-extrabold mt-4 mb-4">¿Tienes dudas sobre especificaciones o guías clínicas?</h2>
-                    <p class="text-gray-300 mb-6 leading-relaxed">Conéctate de forma inmediata con nuestro canal de asistencia inteligente impulsado por IA, conectado a la documentación técnica alemana para resolver consultas de torque, prescripción y compatibilidad.</p>
-                    <a href="https://wa.me/593TU_NUMERO_AQUI?text=Hola,%20necesito%20soporte%20del%20Oráculo%20Clínico" target="_blank" class="inline-block bg-gold text-forestadent font-bold px-8 py-3.5 rounded-lg hover:bg-yellow-500 transition shadow-md">Consultar al Asistente IA</a>
-                </div>
-                <div class="lg:w-1/3 flex justify-center z-10">
-                    <div class="bg-white/10 p-8 rounded-full border border-white/20 text-gold">
-                        <i class="fas fa-robot text-6xl"></i>
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6 pb-8 border-b border-white/10">
+                <div class="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+                    <img src="/logo-vector-forestadent.webp" alt="Forestadent Ecuador" class="h-9 w-auto object-contain">
+                    <div class="sm:border-l sm:border-gray-700 sm:pl-4">
+                        <p class="text-sm font-bold text-white uppercase tracking-wider">Forestadent Ecuador</p>
+                        <p class="text-xs text-gray-400">Distribución y Representación Autorizada · Quito, Ecuador</p>
                     </div>
                 </div>
+                <div class="flex items-center space-x-6 text-xs font-medium">
+                    <a href="#especialidades" class="hover:text-gold transition">Especialidades</a>
+                    <a href="#catalogo" class="hover:text-gold transition">Catálogo</a>
+                    <a href="#posgrados" class="hover:text-gold transition">Posgrados</a>
+                    <a href="#ecosistema-ia" class="hover:text-gold transition">Ecosistema IA</a>
+                </div>
             </div>
-        </div>
-    </section>
-
-    <!-- Footer Corporativo Limpio -->
-    <footer class="bg-forestadent text-gray-400 py-12 border-t border-gray-800">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center text-center md:text-left">
-            <div class="mb-4 md:mb-0">
-                <span class="text-xl font-bold tracking-widest text-white uppercase">Forestadent<span class="text-gold">.</span> Ecuador</span>
-                <p class="text-xs text-gray-500 mt-1">Representación Oficial y Distribución Autorizada en el Ecuador.</p>
-            </div>
-            <div>
-                <p class="text-xs text-gray-500">&copy; 2026 Forestadent Ecuador. Todos los derechos reservados.</p>
+            <div class="pt-6 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-500 gap-2">
+                <p>&copy; <%= new Date().getFullYear() %> Forestadent Ecuador. Todos los derechos reservados.</p>
+                <p>Portal Comercial B2B para Profesionales de la Ortodoncia.</p>
             </div>
         </div>
     </footer>
 
-    <!-- Botón Flotante de WhatsApp -->
-    <a href="https://wa.me/573028665643?text=Hola,%20vengo%20de%20la%20pagina%20web" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white w-14 h-14 flex items-center justify-center rounded-full shadow-2xl hover:bg-green-600 transition-transform transform hover:scale-110 z-50 text-2xl">
-        <i class="fab fa-whatsapp"></i>
-    </a>
+    <!-- ========================================== -->
+    <!-- WIDGET FLOTANTE: ASISTENTE IA FORESTADENT  -->
+    <!-- ========================================== -->
+    <div id="chatWidgetContenedor" class="fixed bottom-5 right-5 z-50 flex flex-col items-end">
 
+        <!-- Ventana del Chat -->
+        <div id="chatVentana" class="hidden w-[92vw] sm:w-[400px] h-[560px] max-h-[82vh] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col mb-3">
+            <!-- Header del Chat -->
+            <div class="bg-forestadent text-white px-5 py-4 flex items-center justify-between flex-shrink-0">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-gold/20 border border-gold/50 text-gold flex items-center justify-center">
+                        <i class="fas fa-robot text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold leading-tight">Asistente IA Forestadent</h3>
+                        <p class="text-[11px] text-emerald-400 flex items-center">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 mr-1.5"></span> En línea · Ecuador B2B
+                        </p>
+                    </div>
+                </div>
+                <button type="button" id="btnCerrarChat" class="text-gray-300 hover:text-white p-1.5" aria-label="Cerrar chat">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Paso 1: Formulario de Registro Rápido (Captura a MongoDB) -->
+            <div id="chatPasoRegistro" class="p-6 flex-1 overflow-y-auto flex flex-col justify-center bg-gray-50">
+                <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+                    <div class="flex items-center space-x-2 text-gold mb-2">
+                        <i class="fas fa-shield-alt"></i>
+                        <span class="text-xs font-bold uppercase tracking-wider text-forestadent">Atención Especializada</span>
+                    </div>
+                    <h4 class="text-base font-bold text-forestadent mb-1">Bienvenido a Forestadent Ecuador</h4>
+                    <p class="text-xs text-gray-500 mb-4 leading-relaxed">
+                        Déjanos tus datos para brindarte precios, stock inmediato, asesoría técnica o solicitar tu Panel IA para tu consultorio.
+                    </p>
+
+                    <form id="formRegistroChat" class="space-y-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Nombre completo *</label>
+                            <input type="text" id="inputLeadNombre" required placeholder="Ej: Dr. Carlos Mendoza" class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:border-forestadent">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Teléfono WhatsApp *</label>
+                            <input type="tel" id="inputLeadTelefono" required placeholder="Ej: 0991234567" class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:border-forestadent">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Clínica / Universidad / Ciudad</label>
+                            <input type="text" id="inputLeadEstablecimiento" placeholder="Ej: Clínica Dental Norte - Quito" class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:border-forestadent">
+                        </div>
+
+                        <p id="errorRegistroChat" class="hidden text-xs text-red-600 font-semibold"></p>
+
+                        <button type="submit" id="btnIniciarChat" class="w-full bg-forestadent text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition shadow-md text-sm flex items-center justify-center space-x-2">
+                            <span>Iniciar Conversación con IA</span>
+                            <i class="fas fa-arrow-right text-gold text-xs"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Paso 2: Conversación Activa con Gemini -->
+            <div id="chatPasoConversacion" class="hidden flex-1 flex flex-col overflow-hidden bg-gray-50">
+                <!-- Mensajes -->
+                <div id="chatMensajes" class="flex-1 p-4 overflow-y-auto space-y-3 chat-scroll text-sm"></div>
+
+                <!-- Botón Inteligente de Cierre a WhatsApp (se muestra cuando corresponda o si hay número configurado) -->
+                <div id="contenedorCierreWhatsapp" class="hidden px-4 py-2 bg-emerald-50 border-t border-emerald-100 flex items-center justify-between gap-2">
+                    <span class="text-[11px] font-semibold text-emerald-800">¿Listo para coordinar con un asesor?</span>
+                    <a id="enlaceCierreWhatsapp" href="#" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg inline-flex items-center space-x-1.5 flex-shrink-0 transition">
+                        <i class="fab fa-whatsapp text-sm"></i>
+                        <span>Ir a WhatsApp</span>
+                    </a>
+                </div>
+
+                <!-- Sugerencias rápidas -->
+                <div id="chipsSugerencias" class="px-3 py-2 bg-white border-t border-gray-100 flex gap-1.5 overflow-x-auto flex-shrink-0">
+                    <button type="button" class="chip-chat whitespace-nowrap text-[11px] font-semibold bg-gray-100 hover:bg-gold/20 text-forestadent px-2.5 py-1 rounded-full transition" data-msg="Quiero cotizar brackets de alta rotación">
+                        Cotizar brackets
+                    </button>
+                    <button type="button" class="chip-chat whitespace-nowrap text-[11px] font-semibold bg-gray-100 hover:bg-gold/20 text-forestadent px-2.5 py-1 rounded-full transition" data-msg="¿Qué promociones tienen para posgrados?">
+                        Promos posgrado
+                    </button>
+                    <button type="button" class="chip-chat whitespace-nowrap text-[11px] font-semibold bg-gray-100 hover:bg-gold/20 text-forestadent px-2.5 py-1 rounded-full transition" data-msg="Quiero solicitar mi propio Panel IA para mi consultorio">
+                        Quiero mi Panel IA
+                    </button>
+                </div>
+
+                <!-- Input de Envío -->
+                <form id="formMensajeChat" class="p-3 bg-white border-t border-gray-200 flex items-center gap-2 flex-shrink-0">
+                    <input
+                        type="text"
+                        id="inputMensajeChat"
+                        placeholder="Escribe tu consulta clínica o cotización..."
+                        autocomplete="off"
+                        class="flex-1 px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-forestadent"
+                    >
+                    <button type="submit" id="btnEnviarMensaje" class="bg-forestadent hover:bg-slate-800 text-gold w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition shadow">
+                        <i class="fas fa-paper-plane text-sm"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Botón Burbuja Flotante (Reemplaza el WhatsApp genérico) -->
+        <button
+            type="button"
+            id="btnBurbujaChat"
+            class="pulse-gold bg-forestadent hover:bg-slate-900 text-white px-5 py-3.5 rounded-full shadow-2xl border-2 border-gold flex items-center space-x-3 transition-transform transform hover:scale-105"
+            aria-label="Abrir Asistente IA Forestadent"
+        >
+            <i class="fas fa-robot text-gold text-xl"></i>
+            <span class="font-bold text-sm hidden sm:inline">Asistente IA Forestadent</span>
+        </button>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- LÓGICA INTERACTIVA (FILTROS + CHAT IA)     -->
+    <!-- ========================================== -->
+    <script>
+        (function () {
+            const WHATSAPP_NUMERO = "<%= whatsappNumero %>";
+
+            // --- MENÚ MÓVIL ---
+            const btnMenuMovil = document.getElementById('btnMenuMovil');
+            const menuMovil = document.getElementById('menuMovil');
+            if (btnMenuMovil && menuMovil) {
+                btnMenuMovil.addEventListener('click', () => {
+                    menuMovil.classList.toggle('hidden');
+                });
+                menuMovil.querySelectorAll('a').forEach(a => {
+                    a.addEventListener('click', () => menuMovil.classList.add('hidden'));
+                });
+            }
+
+            // --- BUSCADOR Y FILTROS DEL CATÁLOGO ---
+            const buscador = document.getElementById('buscadorCatalogo');
+            const botonesFiltro = document.querySelectorAll('.filtro-cat');
+            const tarjetas = document.querySelectorAll('.tarjeta-producto');
+            const sinResultados = document.getElementById('sinResultados');
+            let categoriaActiva = 'TODAS';
+
+            function filtrarCatalogo() {
+                const texto = (buscador ? buscador.value : '').trim().toLowerCase();
+                let visibles = 0;
+
+                tarjetas.forEach(card => {
+                    const nombre = card.dataset.nombre || '';
+                    const codigo = card.dataset.codigo || '';
+                    const cat = card.dataset.categoria || '';
+
+                    const coincideTexto = !texto || nombre.includes(texto) || codigo.includes(texto) || cat.includes(texto);
+                    const coincideCat = categoriaActiva === 'TODAS' || cat === categoriaActiva;
+
+                    if (coincideTexto && coincideCat) {
+                        card.classList.remove('hidden');
+                        visibles++;
+                    } else {
+                        card.classList.add('hidden');
+                    }
+                });
+
+                if (sinResultados) {
+                    if (tarjetas.length > 0 && visibles === 0) {
+                        sinResultados.classList.remove('hidden');
+                    } else {
+                        sinResultados.classList.add('hidden');
+                    }
+                }
+            }
+
+            if (buscador) {
+                buscador.addEventListener('input', filtrarCatalogo);
+            }
+
+            botonesFiltro.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    categoriaActiva = btn.dataset.categoria;
+                    botonesFiltro.forEach(b => {
+                        b.classList.remove('bg-forestadent', 'text-white', 'font-bold');
+                        b.classList.add('bg-gray-100', 'text-gray-700', 'font-semibold');
+                    });
+                    btn.classList.remove('bg-gray-100', 'text-gray-700', 'font-semibold');
+                    btn.classList.add('bg-forestadent', 'text-white', 'font-bold');
+                    filtrarCatalogo();
+                });
+            });
+
+            // --- CHATBOT WEB CON IA Y CAPTURA A MONGODB ---
+            const chatVentana = document.getElementById('chatVentana');
+            const btnBurbuja = document.getElementById('btnBurbujaChat');
+            const btnCerrar = document.getElementById('btnCerrarChat');
+            const pasoRegistro = document.getElementById('chatPasoRegistro');
+            const pasoConversacion = document.getElementById('chatPasoConversacion');
+            const formRegistro = document.getElementById('formRegistroChat');
+            const errorRegistro = document.getElementById('errorRegistroChat');
+            const btnIniciarChat = document.getElementById('btnIniciarChat');
+            const chatMensajes = document.getElementById('chatMensajes');
+            const formMensaje = document.getElementById('formMensajeChat');
+            const inputMensaje = document.getElementById('inputMensajeChat');
+            const btnEnviar = document.getElementById('btnEnviarMensaje');
+            const contenedorWa = document.getElementById('contenedorCierreWhatsapp');
+            const enlaceWa = document.getElementById('enlaceCierreWhatsapp');
+
+            let leadActual = null;
+            let historialChat = [];
+            let mensajePendiente = '';
+            let enviando = false;
+
+            // Recuperar lead de la sesión del navegador si ya se registró
+            try {
+                const guardado = sessionStorage.getItem('foresta_lead_web');
+                if (guardado) {
+                    leadActual = JSON.parse(guardado);
+                    mostrarPantallaConversacion(false);
+                }
+            } catch (e) {}
+
+            function abrirChat(mensajeSugerido) {
+                chatVentana.classList.remove('hidden');
+                if (mensajeSugerido) {
+                    if (leadActual) {
+                        enviarMensajeAlServidor(mensajeSugerido);
+                    } else {
+                        mensajePendiente = mensajeSugerido;
+                    }
+                }
+            }
+
+            function cerrarChat() {
+                chatVentana.classList.add('hidden');
+            }
+
+            function escaparHtml(texto) {
+                const div = document.createElement('div');
+                div.textContent = texto;
+                return div.innerHTML;
+            }
+
+            function formatearTextoIA(texto) {
+                return escaparHtml(texto)
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n/g, '<br>');
+            }
+
+            function agregarBurbuja(rol, texto) {
+                const wrap = document.createElement('div');
+                wrap.className = rol === 'usuario' ? 'flex justify-end' : 'flex justify-start';
+
+                const burbuja = document.createElement('div');
+                burbuja.className = rol === 'usuario'
+                    ? 'bg-forestadent text-white px-4 py-2.5 rounded-2xl rounded-br-sm max-w-[85%] shadow-sm leading-relaxed'
+                    : 'bg-white text-gray-800 border border-gray-200 px-4 py-2.5 rounded-2xl rounded-bl-sm max-w-[88%] shadow-sm leading-relaxed';
+
+                burbuja.innerHTML = formatearTextoIA(texto);
+                wrap.appendChild(burbuja);
+                chatMensajes.appendChild(wrap);
+                chatMensajes.scrollTop = chatMensajes.scrollHeight;
+            }
+
+            function actualizarBotonWhatsapp(ultimoTema) {
+                if (!WHATSAPP_NUMERO || !leadActual) return;
+                const resumen = `Hola Forestadent Ecuador, soy ${leadActual.nombre} (${leadActual.establecimiento || 'Especialista'}). Vengo del Asistente IA web y deseo continuar con: ${ultimoTema || 'mi cotización'}`;
+                enlaceWa.href = `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(resumen)}`;
+                contenedorWa.classList.remove('hidden');
+            }
+
+            function mostrarPantallaConversacion(esNuevo) {
+                pasoRegistro.classList.add('hidden');
+                pasoConversacion.classList.remove('hidden');
+
+                if (chatMensajes.children.length === 0) {
+                    const saludo = `¡Hola, **${leadActual.nombre}**! Soy el Asistente IA de Forestadent Ecuador. Ya registré tus datos para darte atención personalizada. ¿En qué producto, cotización o duda clínica te puedo ayudar hoy?`;
+                    agregarBurbuja('asistente', saludo);
+                    historialChat.push({ rol: 'asistente', texto: saludo });
+                }
+
+                if (WHATSAPP_NUMERO) {
+                    actualizarBotonWhatsapp('consulta desde portal web');
+                }
+
+                if (esNuevo && mensajePendiente) {
+                    const temp = mensajePendiente;
+                    mensajePendiente = '';
+                    enviarMensajeAlServidor(temp);
+                }
+            }
+
+            async function enviarMensajeAlServidor(texto) {
+                if (!texto || enviando) return;
+                enviando = true;
+                btnEnviar.disabled = true;
+
+                agregarBurbuja('usuario', texto);
+                historialChat.push({ rol: 'usuario', texto });
+
+                // Indicador de escritura
+                const typingId = 'typing-' + Date.now();
+                const typingWrap = document.createElement('div');
+                typingWrap.id = typingId;
+                typingWrap.className = 'flex justify-start';
+                typingWrap.innerHTML = '<div class="bg-white border border-gray-200 px-4 py-2.5 rounded-2xl text-xs text-gray-400 italic">Consultando catálogo y especificaciones...</div>';
+                chatMensajes.appendChild(typingWrap);
+                chatMensajes.scrollTop = chatMensajes.scrollHeight;
+
+                try {
+                    const res = await fetch('/api/chat-web/mensaje', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            mensaje: texto,
+                            historial: historialChat.slice(-8),
+                            lead: leadActual
+                        })
+                    });
+                    const data = await res.json();
+
+                    const elTyping = document.getElementById(typingId);
+                    if (elTyping) elTyping.remove();
+
+                    if (data.ok && data.respuesta) {
+                        agregarBurbuja('asistente', data.respuesta);
+                        historialChat.push({ rol: 'asistente', texto: data.respuesta });
+                        if (data.sugerirWhatsapp) {
+                            actualizarBotonWhatsapp(texto);
+                        }
+                    } else {
+                        agregarBurbuja('asistente', data.error || 'No pude procesar tu mensaje en este momento.');
+                    }
+                } catch (err) {
+                    const elTyping = document.getElementById(typingId);
+                    if (elTyping) elTyping.remove();
+                    agregarBurbuja('asistente', 'Error de conexión con el servidor. Por favor intenta nuevamente.');
+                } finally {
+                    enviando = false;
+                    btnEnviar.disabled = false;
+                    inputMensaje.focus();
+                }
+            }
+
+            // Registro inicial del Lead
+            formRegistro.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                errorRegistro.classList.add('hidden');
+
+                const nombre = document.getElementById('inputLeadNombre').value.trim();
+                const telefono = document.getElementById('inputLeadTelefono').value.trim();
+                const establecimiento = document.getElementById('inputLeadEstablecimiento').value.trim();
+
+                btnIniciarChat.disabled = true;
+                btnIniciarChat.innerHTML = '<span>Registrando...</span>';
+
+                try {
+                    const res = await fetch('/api/chat-web/registro', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            nombre,
+                            telefono,
+                            establecimiento,
+                            motivo: mensajePendiente
+                        })
+                    });
+                    const data = await res.json();
+
+                    if (!res.ok || !data.ok) {
+                        errorRegistro.textContent = data.error || 'Verifica tus datos e intenta nuevamente.';
+                        errorRegistro.classList.remove('hidden');
+                        return;
+                    }
+
+                    leadActual = data.lead;
+                    sessionStorage.setItem('foresta_lead_web', JSON.stringify(leadActual));
+                    mostrarPantallaConversacion(true);
+                } catch (err) {
+                    errorRegistro.textContent = 'Error de conexión. Intenta nuevamente.';
+                    errorRegistro.classList.remove('hidden');
+                } finally {
+                    btnIniciarChat.disabled = false;
+                    btnIniciarChat.innerHTML = '<span>Iniciar Conversación con IA</span><i class="fas fa-arrow-right text-gold text-xs"></i>';
+                }
+            });
+
+            // Envío de mensajes en chat activo
+            formMensaje.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const texto = inputMensaje.value.trim();
+                if (!texto) return;
+                inputMensaje.value = '';
+                enviarMensajeAlServidor(texto);
+            });
+
+            // Botones de apertura del chat en toda la Landing
+            btnBurbuja.addEventListener('click', () => {
+                if (chatVentana.classList.contains('hidden')) abrirChat();
+                else cerrarChat();
+            });
+            btnCerrar.addEventListener('click', cerrarChat);
+
+            ['btnAbrirChatNav', 'btnAbrirChatMovilTop', 'btnAbrirChatHero'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('click', () => abrirChat());
+            });
+
+            // Botones de "Cotizar con Asistente IA" en cada tarjeta de producto
+            document.querySelectorAll('.btn-cotizar-producto').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const nombreProd = btn.dataset.productoNombre || 'este producto';
+                    const codigoProd = btn.dataset.productoCodigo ? ` (Ref: ${btn.dataset.productoCodigo})` : '';
+                    abrirChat(`Hola, deseo cotizar y consultar disponibilidad de: ${nombreProd}${codigoProd}`);
+                });
+            });
+
+            // Botones de líneas clínicas y posgrados
+            document.querySelectorAll('.btn-consultar-linea').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tema = btn.dataset.tema || 'catálogo Forestadent';
+                    abrirChat(`Hola, necesito información y precios sobre: ${tema}`);
+                });
+            });
+
+            // Botón de producto no encontrado en búsqueda
+            const btnNoEncontrado = document.getElementById('btnConsultarNoEncontrado');
+            if (btnNoEncontrado) {
+                btnNoEncontrado.addEventListener('click', () => {
+                    const q = (buscador ? buscador.value.trim() : '') || 'un producto específico';
+                    abrirChat(`Hola, busqué "${q}" en el catálogo web y quisiera saber si lo tienen disponible o bajo pedido.`);
+                });
+            }
+
+            // Botón Solicitar Panel IA para consultorio/clínica
+            const btnPanelIA = document.getElementById('btnSolicitarPanelIA');
+            if (btnPanelIA) {
+                btnPanelIA.addEventListener('click', () => {
+                    abrirChat('Hola, soy cliente/especialista interesado en solicitar mi propio Panel con Asistente IA para mi consultorio o clínica.');
+                });
+            }
+
+            // Chips rápidos dentro del chat
+            document.querySelectorAll('.chip-chat').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    const msg = chip.dataset.msg;
+                    if (msg) enviarMensajeAlServidor(msg);
+                });
+            });
+        })();
+    </script>
 </body>
 </html>
