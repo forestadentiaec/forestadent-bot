@@ -261,7 +261,13 @@
                             data-codigo="<%= (p.codigo || '').toLowerCase() %>"
                             data-categoria="<%= (p.categoria || '').toLowerCase() %>"
                         >
-                            <div class="p-6">
+                            <% if (p.imagen_url) { %>
+                                <div class="h-48 w-full bg-white border-b border-gray-100 flex items-center justify-center p-4 overflow-hidden">
+                                    <img src="<%= p.imagen_url %>" alt="<%= p.nombre %>" loading="lazy" class="max-h-full max-w-full object-contain transition-transform duration-300 hover:scale-105">
+                                </div>
+                            <% } %>
+
+                            <div class="p-6 flex-1">
                                 <div class="flex items-center justify-between gap-2 mb-3">
                                     <span class="text-[11px] font-bold uppercase tracking-wider text-forestadent bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-md">
                                         <%= p.categoria || 'Ortodoncia' %>

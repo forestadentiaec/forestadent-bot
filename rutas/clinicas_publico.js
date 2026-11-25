@@ -6,6 +6,12 @@ const {
     hashPassword,
     verificarPassword
 } = require('../modelos/BaseDatos');
+const {
+    cloudinaryEstaConfigurado,
+    manejarSubidaImagen,
+    subirImagenCloudinary,
+    eliminarImagenCloudinary
+} = require('../utilidades/cloudinary');
 
 function esc(str) {
     return String(str || '')
@@ -397,19 +403,25 @@ router.post('/mi-clinica/cambiar-clave', verificarClinica, async (req, res) => {
 });
 
 // ==========================================
-// 7. PANEL PRIVADO DEL DOCTOR (PACIENTES + CONFIGURACIÓN)
+// 7. PANEL PRIVADO DEL DOCTOR (PACIENTES + LOGO + CONFIGURACIÓN)
 // ==========================================
 router.get('/mi-clinica/panel', verificarClinica, async (req, res) => {
     try {
         const c = req.clinica;
         const pacientes = await PacienteClinica.find({ clinica_id: c._id }).sort({ fecha: -1 }).limit(100).lean();
         const urlPublica = `${obtenerUrlBase(req)}/c/${c.slug}`;
+        const cloudActivo = cloudinaryEstaConfigurado();
 
-        const avisoOk = req.query.ok === 'config'
-            ? '<div class="bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold p-3.5 rounded-xl mb-6">✅ Configuración guardada. Tu página web y tu Asistente IA ya están actualizados.</div>'
-            : req.query.ok === 'clave'
-                ? '<div class="bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold p-3.5 rounded-xl mb-6">✅ Contraseña actualizada correctamente. ¡Bienvenido a tu panel!</div>'
-                : '';
+        let avisoOk = '';
+        if (req.query.ok === 'config') {
+            avisoOk = '<div class="bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold p-3.5 rounded-xl mb-6">✅ Configuración guardada. Tu página web y tu Asistente IA ya están actualizados.</div>';
+        } else if (req.query.ok === 'clave') {
+            avisoOk = '<div class="bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold p-3.5 rounded-xl mb-6">✅ Contraseña actualizada correctamente. ¡Bienvenido a tu panel!</div>';
+        }
+
+        const avisoLogo = req.query.aviso
+            ? `<div class="bg-amber-50 border border-amber-300 text-amber-900 text-xs font-bold p-3.5 rounded-xl mb-6">⚠️ ${esc(req.query.aviso)}</div>`
+            : '';
 
         const filasPacientes = pacientes.length > 0 ? pacientes.map(p => {
             const fechaTxt = p.fecha ? new Date(p.fecha).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
@@ -473,6 +485,7 @@ router.get('/mi-clinica/panel', verificarClinica, async (req, res) => {
                 </div>
 
                 ${avisoOk}
+                ${avisoLogo}
 
                 <!-- Enlace compartible -->
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200 mb-6 flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -507,10 +520,28 @@ router.get('/mi-clinica/panel', verificarClinica, async (req, res) => {
 
                 <!-- Configuración de la Clínica y Entrenamiento de la IA -->
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-base font-extrabold text-[#0b1f38] mb-1">⚙️ Personalizar mi Página Web y Asistente IA</h2>
+                    <h2 class="text-base font-extrabold text-[#0b1f38] mb-1">⚙️ Personalizar mi Página Web, Logo y Asistente IA</h2>
                     <p class="text-xs text-gray-500 mb-5">Todo lo que actualices aquí se refleja al instante en tu página pública y en las respuestas de tu chatbot.</p>
 
-                    <form action="/mi-clinica/guardar-config" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <form action="/mi-clinica/guardar-config" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <!-- Bloque de Logo Propio -->
+                        <div class="md:col-span-2 bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row items-center gap-4">
+                            <img id="previewLogoDoctor" src="${esc(c.logo_url || 'https://placehold.co/120x120/e2e8f0/64748b?text=Tu+Logo')}" alt="Logo actual" class="w-20 h-20 rounded-xl object-contain bg-white border border-gray-200 p-1.5 shadow-sm flex-shrink-0">
+                            <div class="flex-1 w-full space-y-2.5">
+                                <div>
+                                    <label class="block text-xs font-extrabold text-[#0b1f38] uppercase mb-1">📤 Subir el Logo de tu Consultorio / Clínica (PNG, JPG o WEBP)</label>
+                                    <input type="file" name="logo_file" accept="image/*" onchange="previsualizarLogoDoctor(event)" class="w-full text-xs text-gray-700 file:mr-3 file:py-2 file:px-3.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#0b1f38] file:text-white hover:file:bg-slate-800 cursor-pointer">
+                                    <p class="text-[11px] text-gray-500 mt-1">
+                                        ${cloudActivo ? 'Se guarda automáticamente en la nube y actualiza tu página pública al instante (máx. 5 MB).' : 'La carga directa desde archivo se habilitará en cuanto se active el almacenamiento en nube; mientras tanto puedes pegar una URL abajo.'}
+                                    </p>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">O URL de tu Logo (opcional)</label>
+                                    <input type="url" name="logo_url" value="${esc(c.logo_url)}" placeholder="https://..." class="w-full border border-gray-300 bg-white rounded-lg p-2 text-xs">
+                                </div>
+                            </div>
+                        </div>
+
                         <div>
                             <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Nombre comercial</label>
                             <input type="text" name="nombre" required value="${esc(c.nombre)}" class="w-full border border-gray-300 rounded-lg p-2.5">
@@ -535,11 +566,7 @@ router.get('/mi-clinica/panel', verificarClinica, async (req, res) => {
                             <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Horarios de atención</label>
                             <input type="text" name="horarios" value="${esc(c.horarios)}" class="w-full border border-gray-300 rounded-lg p-2.5">
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">URL de tu Logo (imagen)</label>
-                            <input type="url" name="logo_url" value="${esc(c.logo_url)}" placeholder="https://..." class="w-full border border-gray-300 rounded-lg p-2.5">
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-2 gap-3 md:col-span-2">
                             <div>
                                 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Color Principal</label>
                                 <input type="color" name="color_primario" value="${esc(c.color_primario || '#0b1f38')}" class="w-full h-10 rounded border border-gray-300 cursor-pointer">
@@ -569,6 +596,18 @@ router.get('/mi-clinica/panel', verificarClinica, async (req, res) => {
                     </form>
                 </div>
             </div>
+
+            <script>
+                function previsualizarLogoDoctor(event) {
+                    const archivo = event.target.files && event.target.files[0];
+                    if (!archivo) return;
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('previewLogoDoctor').src = e.target.result;
+                    };
+                    reader.readAsDataURL(archivo);
+                }
+            </script>
         </body>
         </html>
         `);
@@ -578,27 +617,48 @@ router.get('/mi-clinica/panel', verificarClinica, async (req, res) => {
     }
 });
 
-router.post('/mi-clinica/guardar-config', verificarClinica, async (req, res) => {
+router.post('/mi-clinica/guardar-config', verificarClinica, manejarSubidaImagen('logo_file'), async (req, res) => {
     try {
         const c = req.clinica;
+        let aviso = '';
+
         c.nombre = (req.body.nombre || c.nombre).trim();
         c.responsable = (req.body.responsable || '').trim();
         c.telefono_whatsapp = normalizarTelefonoEC(req.body.telefono_whatsapp || c.telefono_whatsapp);
         c.ciudad = (req.body.ciudad || '').trim();
         c.direccion = (req.body.direccion || '').trim();
         c.horarios = (req.body.horarios || '').trim();
-        c.logo_url = (req.body.logo_url || '').trim();
         c.color_primario = (req.body.color_primario || '#0b1f38').trim();
         c.color_acento = (req.body.color_acento || '#cda434').trim();
         c.servicios = (req.body.servicios || '').trim();
         c.mensaje_bienvenida = (req.body.mensaje_bienvenida || '').trim();
         c.instrucciones_ia = (req.body.instrucciones_ia || '').trim();
+
+        // Actualizar logo: archivo subido tiene prioridad sobre el campo URL
+        if (req.errorSubida) {
+            aviso = `Tus datos se guardaron, pero el logo no pudo subirse: ${req.errorSubida}`;
+        } else if (req.file && req.file.buffer) {
+            if (cloudinaryEstaConfigurado()) {
+                const subida = await subirImagenCloudinary(req.file.buffer, 'forestadent_logos');
+                if (c.logo_public_id && c.logo_public_id !== subida.public_id) {
+                    await eliminarImagenCloudinary(c.logo_public_id);
+                }
+                c.logo_url = subida.url;
+                c.logo_public_id = subida.public_id;
+            } else {
+                aviso = 'Tus datos se guardaron, pero la carga de archivos aún está pendiente de activarse en el servidor (CLOUDINARY_URL).';
+            }
+        } else if (typeof req.body.logo_url === 'string') {
+            c.logo_url = req.body.logo_url.trim();
+        }
+
         await c.save();
 
-        res.redirect('/mi-clinica/panel?ok=config');
+        const qs = aviso ? `?ok=config&aviso=${encodeURIComponent(aviso)}` : '?ok=config';
+        res.redirect('/mi-clinica/panel' + qs);
     } catch (error) {
         console.error('❌ Error guardando configuración clínica:', error);
-        res.redirect('/mi-clinica/panel');
+        res.redirect('/mi-clinica/panel?aviso=' + encodeURIComponent('No se pudo subir el logo en este momento. Intenta nuevamente.'));
     }
 });
 

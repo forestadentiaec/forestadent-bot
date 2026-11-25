@@ -12,6 +12,7 @@ router.get('/admin/inventario', async (req, res) => {
             const stockActual = Number(p.stock_actual || 0); 
             const stockSeguridad = Number(p.stock_seguridad || 10); 
             const leadTime = Number(p.lead_time_dias || 30);
+            const imgUrl = p.imagen_url ? p.imagen_url : 'https://placehold.co/80x80/f3f4f6/a1a1aa?text=SKU';
             
             let badgeAlerta = ''; 
             let estiloFila = 'hover:bg-gray-50 border-b'; 
@@ -33,10 +34,15 @@ router.get('/admin/inventario', async (req, res) => {
             }
 
             return `
-            <tr class="${estiloFila} fila-inventario" data-sku="${p.codigo.toLowerCase()}" data-nombre="${p.nombre.toLowerCase()}" data-estado="${estadoFiltro}">
+            <tr class="${estiloFila} fila-inventario" data-sku="${(p.codigo || '').toLowerCase()}" data-nombre="${(p.nombre || '').toLowerCase()}" data-estado="${estadoFiltro}">
                 <td class="p-4">
-                    <p class="font-extrabold text-gray-900 text-sm tracking-tight">${p.codigo}</p>
-                    <p class="font-medium text-xs text-gray-500 mt-0.5 truncate max-w-xs">${p.nombre}</p>
+                    <div class="flex items-center gap-3">
+                        <img src="${imgUrl}" alt="Foto" class="w-10 h-10 rounded-lg object-cover border border-gray-200 bg-white flex-shrink-0">
+                        <div>
+                            <p class="font-extrabold text-gray-900 text-sm tracking-tight">${p.codigo || 'S/C'}</p>
+                            <p class="font-medium text-xs text-gray-500 mt-0.5 truncate max-w-xs">${p.nombre || ''}</p>
+                        </div>
+                    </div>
                 </td>
                 <td class="p-4 text-center">
                     <input type="number" id="st_${p._id}" value="${stockActual}" class="w-20 p-2 text-center rounded-md font-extrabold text-sm border outline-none transition-all ${colorInput}">

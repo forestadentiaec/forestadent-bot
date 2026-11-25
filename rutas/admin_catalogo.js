@@ -2,50 +2,71 @@ const express = require('express');
 const router = express.Router();
 const { Producto } = require('../modelos/BaseDatos');
 const { htmlHead, menuNavegacion } = require('../vistas/Plantillas');
+const {
+    cloudinaryEstaConfigurado,
+    manejarSubidaImagen,
+    subirImagenCloudinary,
+    eliminarImagenCloudinary
+} = require('../utilidades/cloudinary');
+
+function escHtml(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
 router.get('/admin/catalogo', async (req, res) => {
     try {
         const prod = await Producto.find().sort({ categoria: 1, nombre: 1 });
+        const cloudActivo = cloudinaryEstaConfigurado();
         
         // Extraer categorías únicas para el filtro
         const categorias = [...new Set(prod.map(p => p.categoria || 'General'))].sort();
-        const opcionesCat = categorias.map(c => `<option value="${c.toLowerCase()}">📂 ${c}</option>`).join('');
+        const opcionesCat = categorias.map(c => `<option value="${escHtml(c.toLowerCase())}">📂 ${escHtml(c)}</option>`).join('');
 
         let filas = prod.map(p => {
             // Imagen por defecto si no tiene una asignada
             const imgUrl = p.imagen_url ? p.imagen_url : 'https://placehold.co/150x150/f3f4f6/a1a1aa?text=Sin+Foto';
             
-            // Preparamos datos para la Ficha
+            // Preparamos datos seguros para la Ficha
             const pJson = JSON.stringify({
                 id: p._id,
-                codigo: p.codigo,
-                nombre: p.nombre,
+                codigo: p.codigo || '',
+                nombre: p.nombre || '',
                 categoria: p.categoria || 'General',
-                precio: p.precio,
+                precio: Number(p.precio || 0),
+                empaque: p.empaque || '',
                 imagen_url: p.imagen_url || '',
-                descripcion: (p.descripcion || '').replace(/"/g, '&quot;').replace(/\n/g, '\\n')
-            });
+                descripcion: p.descripcion || ''
+            }).replace(/</g, '\\u003c').replace(/'/g, '&#39;');
 
             return `
-            <tr class="border-b hover:bg-gray-50 fila-producto" data-sku="${p.codigo.toLowerCase()}" data-nombre="${p.nombre.toLowerCase()}" data-categoria="${(p.categoria || 'general').toLowerCase()}">
+            <tr class="border-b hover:bg-gray-50 fila-producto" data-sku="${escHtml((p.codigo || '').toLowerCase())}" data-nombre="${escHtml((p.nombre || '').toLowerCase())}" data-categoria="${escHtml((p.categoria || 'general').toLowerCase())}">
                 <td class="p-4 w-16">
-                    <img src="${imgUrl}" class="w-12 h-12 rounded-lg object-cover border border-gray-200 shadow-sm" alt="Foto">
+                    <img src="${escHtml(imgUrl)}" class="w-12 h-12 rounded-lg object-cover border border-gray-200 shadow-sm bg-white" alt="Foto">
                 </td>
                 <td class="p-4">
-                    <p class="font-extrabold text-gray-900 text-sm tracking-tight">${p.codigo}</p>
-                    <p class="font-medium text-xs text-gray-500 mt-0.5 truncate max-w-[200px]">${p.nombre}</p>
+                    <p class="font-extrabold text-gray-900 text-sm tracking-tight">${escHtml(p.codigo || 'S/C')}</p>
+                    <p class="font-medium text-xs text-gray-500 mt-0.5 truncate max-w-[200px]">${escHtml(p.nombre || '')}</p>
                 </td>
                 <td class="p-4">
-                    <span class="bg-gray-100 text-gray-700 border border-gray-200 text-[10px] font-extrabold px-2.5 py-1 rounded-sm uppercase tracking-wide">${p.categoria || 'General'}</span>
+                    <span class="bg-gray-100 text-gray-700 border border-gray-200 text-[10px] font-extrabold px-2.5 py-1 rounded-sm uppercase tracking-wide">${escHtml(p.categoria || 'General')}</span>
                 </td>
                 <td class="p-4 text-center">
-                    <p class="font-extrabold text-blue-700 text-lg">$${Number(p.precio).toFixed(2)}</p>
+                    <p class="font-extrabold text-blue-700 text-lg">$${Number(p.precio || 0).toFixed(2)}</p>
                 </td>
                 <td class="p-4 text-center">
                     <button onclick='abrirFichaProd(${pJson})' class="bg-white border border-gray-300 hover:bg-forestaBlack hover:text-white hover:border-forestaBlack text-gray-700 px-4 py-2 rounded-lg font-extrabold text-[10px] uppercase tracking-wide shadow-sm transition-all w-full">✏️ Ficha y Media</button>
                 </td>
             </tr>`;
         }).join('');
+
+        const badgeCloud = cloudActivo
+            ? '<span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-extrabold px-3 py-1 rounded-full">☁️ Cloudinary Conectado</span>'
+            : '<span class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-extrabold px-3 py-1 rounded-full">⏳ Cloudinary pendiente (agrega CLOUDINARY_URL en Render)</span>';
 
         res.send(`<!DOCTYPE html><html><head><title>Catálogo Vivo | Forestadent</title>${htmlHead}</head><body class="bg-gray-100 p-8"><div class="max-w-7xl mx-auto">${menuNavegacion}
         
@@ -62,11 +83,12 @@ router.get('/admin/catalogo', async (req, res) => {
 
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div class="p-6 border-b border-gray-100">
-                <div class="flex justify-between items-center mb-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-6">
                     <div>
                         <h2 class="text-xl font-extrabold uppercase tracking-tight text-gray-900">📑 Gestor de Catálogo y Media</h2>
                         <p class="text-xs text-gray-500 font-medium mt-1">Sincronización en vivo con la IA, imágenes y descripciones B2B</p>
                     </div>
+                    ${badgeCloud}
                 </div>
                 
                 <!-- BARRA DE FILTROS -->
@@ -104,7 +126,7 @@ router.get('/admin/catalogo', async (req, res) => {
                     <button onclick="cerrarFichaProd()" class="text-gray-400 hover:text-white text-2xl font-bold">&times;</button>
                 </div>
                 
-                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[80vh] overflow-y-auto">
+                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-5 max-h-[80vh] overflow-y-auto">
                     <input type="hidden" id="prod_id">
                     
                     <div>
@@ -124,9 +146,30 @@ router.get('/admin/catalogo', async (req, res) => {
                         <input type="number" step="0.01" id="prod_precio" class="w-full border border-blue-300 bg-blue-50 text-blue-800 rounded-md p-2.5 text-lg font-extrabold text-center focus:ring-1 focus:ring-blue-500 outline-none">
                     </div>
                     <div>
-                        <label class="block text-xs font-extrabold text-forestaGold uppercase mb-1">📸 Link de Imagen (Cloudinary/Web)</label>
-                        <input type="text" id="prod_imagen" placeholder="https://res.cloudinary.com/..." class="w-full border border-amber-300 bg-amber-50 text-gray-700 rounded-md p-2.5 text-sm focus:ring-1 focus:ring-forestaGold outline-none">
+                        <label class="block text-xs font-extrabold text-gray-600 uppercase mb-1">📦 Presentación / Empaque</label>
+                        <input type="text" id="prod_empaque" placeholder="Ej: Caso x 20 brackets, Unidad..." class="w-full border border-gray-300 rounded-md p-2.5 text-sm font-semibold focus:border-forestaGold outline-none">
                     </div>
+
+                    <!-- BLOQUE DE IMAGEN: SUBIDA DIRECTA CLOUDINARY + VISTA PREVIA -->
+                    <div class="md:col-span-2 bg-amber-50/60 border border-amber-200 rounded-xl p-4">
+                        <div class="flex flex-col sm:flex-row items-center gap-4">
+                            <img id="prod_preview_img" src="https://placehold.co/150x150/f3f4f6/a1a1aa?text=Sin+Foto" alt="Vista previa" class="w-24 h-24 rounded-xl object-contain bg-white border border-amber-200 p-1 shadow-sm flex-shrink-0">
+                            <div class="flex-1 w-full space-y-3">
+                                <div>
+                                    <label class="block text-xs font-extrabold text-amber-900 uppercase mb-1">📤 Subir Foto desde tu Computadora o Celular (Cloudinary)</label>
+                                    <input type="file" id="prod_imagen_file" accept="image/*" onchange="previsualizarArchivoProd(event)" class="w-full text-xs text-gray-700 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-forestaBlack file:text-white hover:file:bg-gray-800 cursor-pointer">
+                                    <p class="text-[11px] text-gray-500 mt-1">
+                                        ${cloudActivo ? 'Se subirá optimizada automáticamente a tu carpeta forestadent_productos.' : 'Cuando agregues CLOUDINARY_URL en Render se subirá automáticamente aquí. Mientras tanto puedes usar el link de abajo.'}
+                                    </p>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">O pegar Link de Imagen (Opcional)</label>
+                                    <input type="text" id="prod_imagen" placeholder="https://res.cloudinary.com/..." class="w-full border border-amber-300 bg-white text-gray-700 rounded-md p-2 text-xs focus:ring-1 focus:ring-forestaGold outline-none">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="md:col-span-2">
                         <label class="block text-xs font-extrabold text-gray-600 uppercase mb-1">📄 Descripción Clínica (Para Catálogo Digital)</label>
                         <textarea id="prod_descripcion" rows="4" class="w-full border border-gray-300 rounded-md p-3 text-sm focus:border-forestaGold outline-none" placeholder="Características técnicas, composición, indicaciones..."></textarea>
@@ -176,6 +219,17 @@ router.get('/admin/catalogo', async (req, res) => {
                 location.reload();
             }
 
+            // Vista previa instantánea al elegir archivo
+            function previsualizarArchivoProd(event) {
+                const archivo = event.target.files && event.target.files[0];
+                if (!archivo) return;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('prod_preview_img').src = e.target.result;
+                };
+                reader.readAsDataURL(archivo);
+            }
+
             // Modal: Abrir y Cerrar Ficha
             function abrirFichaProd(prod) {
                 document.getElementById('prod_id').value = prod.id;
@@ -183,8 +237,11 @@ router.get('/admin/catalogo', async (req, res) => {
                 document.getElementById('prod_nombre').value = prod.nombre;
                 document.getElementById('prod_categoria').value = prod.categoria;
                 document.getElementById('prod_precio').value = prod.precio;
-                document.getElementById('prod_imagen').value = prod.imagen_url;
-                document.getElementById('prod_descripcion').value = prod.descripcion.replace(/\\n/g, '\\n');
+                document.getElementById('prod_empaque').value = prod.empaque || '';
+                document.getElementById('prod_imagen').value = prod.imagen_url || '';
+                document.getElementById('prod_imagen_file').value = '';
+                document.getElementById('prod_preview_img').src = prod.imagen_url || 'https://placehold.co/150x150/f3f4f6/a1a1aa?text=Sin+Foto';
+                document.getElementById('prod_descripcion').value = prod.descripcion || '';
                 
                 document.getElementById('modalProd').classList.remove('hidden');
             }
@@ -193,55 +250,100 @@ router.get('/admin/catalogo', async (req, res) => {
                 document.getElementById('modalProd').classList.add('hidden');
             }
 
-            // Guardar Cambios Detallados
+            // Guardar Cambios Detallados (Soporta subida de imagen por FormData)
             async function guardarCambiosProd() {
                 const btn = document.getElementById('btnGuardarProd');
-                btn.innerText = '⏳ Sincronizando...';
+                btn.disabled = true;
+                btn.innerText = '⏳ Subiendo y sincronizando...';
 
-                const data = {
-                    id: document.getElementById('prod_id').value,
-                    nombre: document.getElementById('prod_nombre').value,
-                    categoria: document.getElementById('prod_categoria').value,
-                    precio: Number(document.getElementById('prod_precio').value),
-                    imagen_url: document.getElementById('prod_imagen').value,
-                    descripcion: document.getElementById('prod_descripcion').value
-                };
+                const formData = new FormData();
+                formData.append('id', document.getElementById('prod_id').value);
+                formData.append('nombre', document.getElementById('prod_nombre').value);
+                formData.append('categoria', document.getElementById('prod_categoria').value);
+                formData.append('precio', document.getElementById('prod_precio').value);
+                formData.append('empaque', document.getElementById('prod_empaque').value);
+                formData.append('imagen_url', document.getElementById('prod_imagen').value);
+                formData.append('descripcion', document.getElementById('prod_descripcion').value);
+
+                const fileInput = document.getElementById('prod_imagen_file');
+                if (fileInput.files && fileInput.files[0]) {
+                    formData.append('imagen_file', fileInput.files[0]);
+                }
 
                 try {
                     const res = await fetch('/admin/catalogo/actualizar', { 
-                        method:'POST', 
-                        headers:{'Content-Type':'application/json'}, 
-                        body:JSON.stringify(data)
+                        method: 'POST', 
+                        body: formData
                     });
                     const result = await res.json();
-                    if(result.success) {
-                        alert('✅ Producto actualizado e indexado');
+                    if (result.success) {
+                        if (result.aviso) alert('⚠️ ' + result.aviso);
+                        else alert('✅ Producto actualizado e indexado');
                         location.reload();
                     } else {
-                        alert('❌ Error al actualizar');
+                        alert('❌ ' + (result.error || 'Error al actualizar'));
+                        btn.disabled = false;
                         btn.innerText = '💾 Sincronizar con IA';
                     }
                 } catch(e) {
                     alert('❌ Error de red');
+                    btn.disabled = false;
                     btn.innerText = '💾 Sincronizar con IA';
                 }
             }
         </script>
         </div></body></html>`);
-    } catch (e) { res.status(500).send('Error en catálogo'); }
+    } catch (e) {
+        console.error('❌ Error en /admin/catalogo:', e);
+        res.status(500).send('Error en catálogo');
+    }
 });
 
-router.post('/admin/catalogo/actualizar', async (req, res) => {
-    try { 
-        await Producto.findByIdAndUpdate(req.body.id, { 
-            nombre: req.body.nombre, 
-            categoria: req.body.categoria, 
-            precio: req.body.precio,
-            imagen_url: req.body.imagen_url,
-            descripcion: req.body.descripcion
-        }); 
-        res.json({success:true}); 
-    } catch (e) { res.json({success:false}); }
+router.post('/admin/catalogo/actualizar', manejarSubidaImagen('imagen_file'), async (req, res) => {
+    try {
+        if (req.errorSubida) {
+            return res.json({ success: false, error: req.errorSubida });
+        }
+
+        const prod = await Producto.findById(req.body.id);
+        if (!prod) {
+            return res.json({ success: false, error: 'Producto no encontrado.' });
+        }
+
+        let nuevaImagenUrl = (req.body.imagen_url || '').trim();
+        let nuevoPublicId = prod.imagen_public_id || '';
+        let aviso = '';
+
+        // Si el administrador seleccionó un archivo para subir
+        if (req.file && req.file.buffer) {
+            if (cloudinaryEstaConfigurado()) {
+                const subida = await subirImagenCloudinary(req.file.buffer, 'forestadent_productos');
+                if (prod.imagen_public_id && prod.imagen_public_id !== subida.public_id) {
+                    await eliminarImagenCloudinary(prod.imagen_public_id);
+                }
+                nuevaImagenUrl = subida.url;
+                nuevoPublicId = subida.public_id;
+            } else {
+                aviso = 'Los textos y el precio sí se guardaron, pero todavía falta agregar CLOUDINARY_URL en Render para subir archivos de foto.';
+            }
+        }
+
+        prod.nombre = (req.body.nombre || prod.nombre).trim();
+        prod.categoria = (req.body.categoria || 'General').trim();
+        prod.precio = Number(req.body.precio || 0);
+        if (typeof req.body.empaque === 'string') {
+            prod.empaque = req.body.empaque.trim();
+        }
+        prod.imagen_url = nuevaImagenUrl;
+        prod.imagen_public_id = nuevoPublicId;
+        prod.descripcion = (req.body.descripcion || '').trim();
+
+        await prod.save();
+        res.json({ success: true, aviso });
+    } catch (e) {
+        console.error('❌ Error actualizando producto:', e);
+        res.json({ success: false, error: 'Error subiendo imagen o guardando cambios.' });
+    }
 });
 
 router.post('/admin/catalogo/crear', async (req, res) => {

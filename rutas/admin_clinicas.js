@@ -1,4 +1,4 @@
-const express = require('express');
+ const express = require('express');
 const router = express.Router();
 const {
     Clinica,
@@ -8,6 +8,12 @@ const {
     generarPasswordTemporal
 } = require('../modelos/BaseDatos');
 const { htmlHead, menuNavegacion } = require('../vistas/Plantillas');
+const {
+    cloudinaryEstaConfigurado,
+    manejarSubidaImagen,
+    subirImagenCloudinary,
+    eliminarImagenCloudinary
+} = require('../utilidades/cloudinary');
 
 function esc(str) {
     return String(str || '')
@@ -70,7 +76,7 @@ async function intentarEnviarWhatsAppMeta(telefono, texto) {
 }
 
 function armarMensajeCredenciales({ nombre, responsable, urlPublica, urlLogin, usuario, passwordTemp }) {
-    return `¡Hola ${responsable || nombre}! 🎉\n\nBienvenido al *Ecosistema IA para Clientes Aliados de Forestadent Ecuador*.\n\nYa activamos tu cuenta para *${nombre}*:\n\n🌐 *Tu Página Pública con Asistente IA:*\n${urlPublica}\n\n🔐 *Tu Panel Privado (Pacientes y Configuración):*\n${urlLogin}\n\n👤 *Usuario:* ${usuario}\n🔑 *Contraseña temporal:* ${passwordTemp}\n\n⚠️ Por seguridad, al ingresar por primera vez el sistema te pedirá crear tu contraseña definitiva.\n\n¡Éxitos con tu nuevo asistente inteligente!`;
+    return `¡Hola ${responsable || nombre}! 🎉\n\nBienvenido al *Ecosistema IA para Clientes Aliados de Forestadent Ecuador*.\n\nYa activamos tu cuenta para *${nombre}*:\n\n🌐 *Tu Página Pública con Asistente IA:*\n${urlPublica}\n\n🔐 *Tu Panel Privado (Pacientes, Logo y Configuración):*\n${urlLogin}\n\n👤 *Usuario:* ${usuario}\n🔑 *Contraseña temporal:* ${passwordTemp}\n\n⚠️ Por seguridad, al ingresar por primera vez el sistema te pedirá crear tu contraseña definitiva. Luego podrás subir tu propio logo y personalizar tus servicios.\n\n¡Éxitos con tu nuevo asistente inteligente!`;
 }
 
 // ==========================================
@@ -95,6 +101,7 @@ router.get('/admin/clinicas', async (req, res) => {
         });
 
         const baseUrl = obtenerUrlBase(req);
+        const cloudActivo = cloudinaryEstaConfigurado();
         const alertaCredenciales = req.session.ultimaCredencialCreada || null;
         delete req.session.ultimaCredencialCreada;
 
@@ -104,6 +111,7 @@ router.get('/admin/clinicas', async (req, res) => {
                 <div>
                     <h3 class="text-lg font-extrabold text-emerald-900">✅ Cuenta lista: ${esc(alertaCredenciales.nombre)}</h3>
                     <p class="text-xs text-emerald-700 font-semibold mt-0.5">${esc(alertaCredenciales.estadoEnvioMeta)}</p>
+                    ${alertaCredenciales.avisoLogo ? `<p class="text-xs text-amber-800 font-bold mt-1">⚠️ ${esc(alertaCredenciales.avisoLogo)}</p>` : ''}
                 </div>
                 <div class="flex flex-wrap gap-2">
                     ${alertaCredenciales.telefono ? `
@@ -167,15 +175,23 @@ router.get('/admin/clinicas', async (req, res) => {
             const badgeClave = c.debe_cambiar_password
                 ? '<span class="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">Pendiente 1er ingreso</span>'
                 : '<span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Clave actualizada</span>';
+            const avatarLogo = c.logo_url
+                ? `<img src="${esc(c.logo_url)}" alt="Logo" class="w-10 h-10 rounded-lg object-contain bg-white border border-gray-200 p-0.5 flex-shrink-0">`
+                : `<div class="w-10 h-10 rounded-lg bg-gray-800 text-amber-400 font-extrabold text-sm flex items-center justify-center flex-shrink-0">${esc((c.nombre || 'C').charAt(0).toUpperCase())}</div>`;
 
             return `
             <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
                 <td class="p-4">
-                    <div class="font-bold text-sm text-forestaBlack">${esc(c.nombre)}</div>
-                    <div class="text-xs text-gray-500">${esc(c.responsable || '')} · <span class="uppercase font-semibold">${esc(c.tipo)}</span> · ${esc(c.ciudad)}</div>
-                    <div class="mt-1 flex items-center gap-2">
-                        <span class="text-[11px] font-mono text-gray-500">User: <strong>${esc(c.usuario_acceso)}</strong></span>
-                        ${badgeClave}
+                    <div class="flex items-start gap-3">
+                        ${avatarLogo}
+                        <div>
+                            <div class="font-bold text-sm text-forestaBlack">${esc(c.nombre)}</div>
+                            <div class="text-xs text-gray-500">${esc(c.responsable || '')} · <span class="uppercase font-semibold">${esc(c.tipo)}</span> · ${esc(c.ciudad)}</div>
+                            <div class="mt-1 flex items-center gap-2 flex-wrap">
+                                <span class="text-[11px] font-mono text-gray-500">User: <strong>${esc(c.usuario_acceso)}</strong></span>
+                                ${badgeClave}
+                            </div>
+                        </div>
                     </div>
                 </td>
                 <td class="p-4 text-xs">
@@ -234,12 +250,17 @@ router.get('/admin/clinicas', async (req, res) => {
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5 pb-3 border-b border-gray-100">
                         <div>
                             <h2 class="text-lg font-extrabold text-forestaBlack uppercase">🏥 Activar Nueva Clínica / Doctor / Universidad</h2>
-                            <p class="text-xs text-gray-500">Genera automáticamente su página web con Chatbot IA, su panel privado y su contraseña temporal de primer ingreso.</p>
+                            <p class="text-xs text-gray-500">Genera automáticamente su página web con Chatbot IA, su panel privado (donde cada doctor puede subir su propio logo) y su contraseña temporal.</p>
                         </div>
-                        <span class="text-xs font-bold bg-gray-100 text-gray-600 px-3 py-1 rounded-full">Total activas: ${clinicas.filter(c => c.activo).length} / ${clinicas.length}</span>
+                        <div class="flex items-center gap-2">
+                            ${cloudActivo
+                                ? '<span class="text-[11px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full">☁️ Cloudinary Activo</span>'
+                                : '<span class="text-[11px] font-extrabold bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full">⏳ Cloudinary pendiente</span>'}
+                            <span class="text-xs font-bold bg-gray-100 text-gray-600 px-3 py-1 rounded-full">Activas: ${clinicas.filter(c => c.activo).length} / ${clinicas.length}</span>
+                        </div>
                     </div>
 
-                    <form action="/admin/clinicas/crear" method="POST" id="formCrearClinica" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <form action="/admin/clinicas/crear" method="POST" enctype="multipart/form-data" id="formCrearClinica" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <input type="hidden" name="solicitud_id" id="inputSolicitudId" value="">
 
                         <div>
@@ -276,13 +297,18 @@ router.get('/admin/clinicas', async (req, res) => {
                             <input type="text" name="usuario_acceso" placeholder="Si lo dejas vacío se genera automático" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none focus:border-forestaGold">
                         </div>
 
-                        <div class="md:col-span-2">
+                        <div class="md:col-span-3">
                             <label class="block text-xs font-extrabold text-gray-600 uppercase mb-1">Servicios Principales (separados por coma)</label>
                             <input type="text" name="servicios" value="Ortodoncia convencional, Autoligado estético y metálico, Alineadores invisibles, Valoración inicial" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none focus:border-forestaGold">
                         </div>
 
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-extrabold text-gray-600 uppercase mb-1">📤 Subir Logo Inicial (Opcional — el doctor también puede subirlo en su panel)</label>
+                            <input type="file" name="logo_file" accept="image/*" class="w-full border border-gray-300 rounded-lg p-2 text-xs bg-gray-50 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-forestaBlack file:text-white cursor-pointer">
+                        </div>
+
                         <div>
-                            <label class="block text-xs font-extrabold text-gray-600 uppercase mb-1">URL del Logo (Opcional)</label>
+                            <label class="block text-xs font-extrabold text-gray-600 uppercase mb-1">O URL de Logo (Opcional)</label>
                             <input type="url" name="logo_url" placeholder="https://..." class="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none focus:border-forestaGold">
                         </div>
 
@@ -353,9 +379,9 @@ router.get('/admin/clinicas', async (req, res) => {
 });
 
 // ==========================================
-// 2. CREAR NUEVA CLÍNICA + CLAVE TEMPORAL
+// 2. CREAR NUEVA CLÍNICA + CLAVE TEMPORAL + LOGO OPCIONAL
 // ==========================================
-router.post('/admin/clinicas/crear', async (req, res) => {
+router.post('/admin/clinicas/crear', manejarSubidaImagen('logo_file'), async (req, res) => {
     try {
         const nombre = (req.body.nombre || '').trim();
         const responsable = (req.body.responsable || '').trim();
@@ -363,12 +389,31 @@ router.post('/admin/clinicas/crear', async (req, res) => {
         const tipo = (req.body.tipo || 'consultorio').trim();
         const ciudad = (req.body.ciudad || 'Quito').trim();
         const servicios = (req.body.servicios || '').trim();
-        const logo_url = (req.body.logo_url || '').trim();
+        let logo_url = (req.body.logo_url || '').trim();
+        let logo_public_id = '';
+        let avisoLogo = '';
         const solicitudId = (req.body.solicitud_id || '').trim();
         const enviarMeta = req.body.enviar_meta_api === '1';
 
         if (!nombre || !telefono) {
             return res.send(`<script>alert('⚠️ Debes ingresar al menos el nombre y el WhatsApp.'); window.location.href='/admin/clinicas';</script>`);
+        }
+
+        // Subida opcional del logo inicial a Cloudinary
+        if (req.errorSubida) {
+            avisoLogo = `La clínica se creó, pero el logo no se subió: ${req.errorSubida}`;
+        } else if (req.file && req.file.buffer) {
+            if (cloudinaryEstaConfigurado()) {
+                try {
+                    const subida = await subirImagenCloudinary(req.file.buffer, 'forestadent_logos');
+                    logo_url = subida.url;
+                    logo_public_id = subida.public_id;
+                } catch (e) {
+                    avisoLogo = 'La clínica se creó, pero hubo un error subiendo el logo a Cloudinary. El doctor puede subirlo desde su panel.';
+                }
+            } else {
+                avisoLogo = 'La clínica se creó, pero aún falta configurar CLOUDINARY_URL en Render para guardar archivos de logo.';
+            }
         }
 
         // Generar slug único
@@ -400,6 +445,7 @@ router.post('/admin/clinicas/crear', async (req, res) => {
             ciudad,
             servicios: servicios || 'Ortodoncia convencional, Autoligado, Alineadores, Valoración inicial',
             logo_url,
+            logo_public_id,
             usuario_acceso: usuarioFinal,
             password_hash,
             debe_cambiar_password: true,
@@ -441,7 +487,8 @@ router.post('/admin/clinicas/crear', async (req, res) => {
             urlPublica,
             urlLogin,
             mensajeWhatsApp,
-            estadoEnvioMeta
+            estadoEnvioMeta,
+            avisoLogo
         };
 
         res.redirect('/admin/clinicas');
@@ -528,6 +575,10 @@ router.post('/admin/clinicas/descartar-solicitud/:id', async (req, res) => {
 
 router.post('/admin/clinicas/eliminar/:id', async (req, res) => {
     try {
+        const clinica = await Clinica.findById(req.params.id);
+        if (clinica && clinica.logo_public_id) {
+            await eliminarImagenCloudinary(clinica.logo_public_id);
+        }
         await PacienteClinica.deleteMany({ clinica_id: req.params.id });
         await Clinica.findByIdAndDelete(req.params.id);
     } catch (e) {

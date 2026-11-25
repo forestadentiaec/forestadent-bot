@@ -64,6 +64,9 @@ const productoSchema = new mongoose.Schema({
     categoria: String,
     precio: Number,
     empaque: String,
+    descripcion: { type: String, default: '' },
+    imagen_url: { type: String, default: '' },
+    imagen_public_id: { type: String, default: '' },
     stock_actual: { type: Number, default: 0 }, 
     stock_seguridad: { type: Number, default: 10 }, 
     lead_time_dias: { type: Number, default: 30 } 
@@ -121,6 +124,7 @@ const clinicaSchema = new mongoose.Schema({
     direccion: { type: String, default: '' },
     horarios: { type: String, default: 'Lunes a Viernes 09:00 - 18:00' },
     logo_url: { type: String, default: '' },
+    logo_public_id: { type: String, default: '' },
     color_primario: { type: String, default: '#0b1f38' },
     color_acento: { type: String, default: '#cda434' },
     servicios: { type: String, default: 'Ortodoncia convencional, Autoligado estético y metálico, Alineadores invisibles, Valoración inicial' },
